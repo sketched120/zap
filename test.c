@@ -1,0 +1,26 @@
+#include <curl/curl.h>
+#include "download.h"
+
+int main(void) {
+    curl_global_init(CURL_GLOBAL_ALL);
+
+    char *urls[] = {
+        "https://resources.download.minecraft.net/b6/b62ca8ec10d07e6bf5ac8dae0c8c1d2e6a1e3356",
+        "https://resources.download.minecraft.net/5f/5ff04807c356f1beed0b86ccf659b44b9983e3fa",
+        "https://resources.download.minecraft.net/80/8030dd9dc315c0381d52c4782ea36c6baf6e8135",
+        "https://resources.download.minecraft.net/af/af96f55a90eaf11b327f1b5f8834a051027dc506",
+        "https://resources.download.minecraft.net/b8/b80b6e9ff01c78c624df5429e1d3dcd3d5130834",
+    };
+    char *dests[] = {
+        "/tmp/test_assets/b6/b62ca8ec10d07e6bf5ac8dae0c8c1d2e6a1e3356",
+        "/tmp/test_assets/5f/5ff04807c356f1beed0b86ccf659b44b9983e3fa",
+        "/tmp/test_assets/80/8030dd9dc315c0381d52c4782ea36c6baf6e8135",
+        "/tmp/test_assets/af/af96f55a90eaf11b327f1b5f8834a051027dc506",
+        "/tmp/test_assets/b8/b80b6e9ff01c78c624df5429e1d3dcd3d5130834",
+    };
+
+    download_files(urls, dests, 5);
+
+    curl_global_cleanup();
+    return 0;
+}

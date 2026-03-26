@@ -30,7 +30,7 @@ static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *ud) {
     return fwrite(ptr, size, nmemb, (FILE *)ud);
 }
 
-void download_files(const char **urls, const char **dests, int n) {
+void download_files(char **urls, char **dests, int n) {
     CURLM *multi = curl_multi_init();
 
     FILE *fps[n];  // track open file handles
@@ -80,7 +80,18 @@ void download_files(const char **urls, const char **dests, int n) {
 }
 
 void download_file(const char *url, const char *dest) {
-    const char *urls[]  = { url };
-    const char *dests[] = { dest };
-    download_files(urls, dests, 1);
+    mkdirs(dest);
+    // if (file_exists(dest)) return;
+
+    FILE *fp = fopen(dest, "wb");
+    if (!fp) return;
+
+    CURL *easy = curl_easy_init();
+    curl_easy_setopt(easy, CURLOPT_URL,            url);
+    curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION,  write_cb);
+    curl_easy_setopt(easy, CURLOPT_WRITEDATA,      fp);
+    curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_perform(easy);  // blocking, single file
+    curl_easy_cleanup(easy);
+    fclose(fp);
 }

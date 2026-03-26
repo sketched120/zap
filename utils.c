@@ -36,7 +36,7 @@ int is_allowed_on_linux(cJSON *library) {
     return allowed;
 }
 
-char *read_file(const char *path) {
+char *read_file(char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
         fprintf(stderr, "failed to read file: %s\n", path);
