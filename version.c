@@ -13,7 +13,7 @@ void list_available_versions(cJSON *manifest_json, char *vertype) {
     cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
     size_t size = cJSON_GetArraySize(versions);
     
-    for (int i = size; i >= 0; i--) {
+    for (int i = size - 1; i >= 0; i--) {
         cJSON *ver = cJSON_GetArrayItem(versions, i);
         cJSON *id = cJSON_GetObjectItem(ver, "id");
         cJSON *type = cJSON_GetObjectItem(ver, "type");
@@ -131,6 +131,8 @@ void download_assets(cJSON *version_json) {
         urls[start] = strdup(url);
         dests[start] = strdup(dest_path);
         start++;
+
+        object = object->next;
     }
 
     download_files(urls, dests, a_count);
