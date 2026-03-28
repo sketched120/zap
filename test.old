@@ -1,4 +1,7 @@
-#include <curl/curl.h>
+#include "natives.h"
+#include <stdio.h>
+#include "utils.h"
+/*
 #include "download.h"
 
 int main(void) {
@@ -22,5 +25,19 @@ int main(void) {
     download_files(urls, dests, 5);
 
     curl_global_cleanup();
+    return 0;
+} */
+
+int main() {
+    printf("reading file\n");
+    char *buf = read_file(MINECRAFT_PATH"/versions/26.1/26.1.json");
+    printf("parsing json\n");
+    cJSON *json = cJSON_Parse(buf);
+    if (!json) {
+        printf("SOMETHING HORRIBLE HAPPENED");
+        return 1;
+    }
+    puts("running extract_wrapper");
+    extract_wrapper(json);
     return 0;
 }

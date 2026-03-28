@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+//#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -7,11 +8,11 @@
 
 #include "utils.h"
 
-int is_allowed_on_linux(cJSON *library) {
+bool is_allowed_on_linux(cJSON *library) {
     cJSON *rules = cJSON_GetObjectItem(library, "rules");
-    if (!rules) return 1;
+    if (!rules) return true;
 
-    int allowed = 0;
+    bool allowed = false;
     cJSON *rule;
     cJSON_ArrayForEach(rule, rules) {
         cJSON *action = cJSON_GetObjectItem(rule, "action");
@@ -19,17 +20,17 @@ int is_allowed_on_linux(cJSON *library) {
 
         if (strcmp(action->valuestring, "allow") == 0) {
             if (!os) {
-                allowed = 1;
+                allowed = true;
             } else {
                 cJSON *name = cJSON_GetObjectItem(os, "name");
                 if (name && strcmp(name->valuestring, "linux") == 0)
-                    allowed = 1;
+                    allowed = true;
             }
         } else if (strcmp(action->valuestring, "disallow") == 0) {
             if (os) {
                 cJSON *name = cJSON_GetObjectItem(os, "name");
                 if (name && strcmp(name->valuestring, "linux") == 0)
-                    allowed = 0;
+                    allowed = false;
             }
         }
     }
@@ -115,7 +116,7 @@ char *build_classpath(cJSON *version_json) {
     size_t offset = 0;
 
     cJSON_ArrayForEach(lib, libraries) {
-        if (!is_allowed_on_linux(lib)) continue;
+        if (is_allowed_on_linux(lib) == false) continue;
 
         if (offset + 1024 > buf_size) {
             buf_size *= 2;
@@ -168,4 +169,11 @@ char *build_classpath(cJSON *version_json) {
              id->valuestring, id->valuestring);
 
     return classpath;
+}
+
+bool file_exists(char *file) {
+    struct stat f_inf;
+    if (stat(file, &f_inf) == 0) {
+        return true;
+    } else return false;
 }

@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <curl/curl.h>
 
-#include "include/auth.h"
-#include "include/download.h"
-#include "include/json.h"
-#include "include/jvm_args.h"
-#include "include/natives.h"
-#include "include/version.h"
-#include "include/fabric.h"
+// #include "include/auth.h"
+//#include "download.h"
+#include "utils.h"
+#include "jvm_args.h"
+#include "natives.h"
+#include "version.h"
+#include "fabric.h"
 
 static void print_help(const char *prog)
 {
@@ -92,34 +92,37 @@ static void launchmc(int dry, char *version)
     char *classpath   = build_classpath(json);
 
     char *accounts_path = MINECRAFT_PATH "/accounts.json";
-    if (!file_exists(accounts_path)) {
+    /* if (!file_exists(accounts_path)) {
         fprintf(stderr, "error: no accounts.json found, create one from PrismLauncher\n");
         free(classpath);
         free(asset_index);
         cJSON_Delete(json);
         free(jsonbuf);
         return;
-    }
+    } */
 
-    Account account_info = get_account_details(accounts_path);
-
+    // Account account_info = get_account_details(accounts_path);
+    char natives_dir[256];
+    snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH"/natives/%s", version);
     LaunchContext ctx = {
         .version      = version,
-        .natives_dir  = NATIVES_DIR,
+         .natives_dir  = natives_dir,
         .classpath    = classpath,
         .assets_dir   = MINECRAFT_PATH "/assets/",
         .asset_index  = asset_index,
         .game_dir     = MINECRAFT_PATH,
-        .username     = account_info.username,
-        .uuid         = account_info.uuid,
-        .access_token = account_info.ygg_token,
+        // .username     = account_info.username,
+        // .uuid         = account_info.uuid,
+        // .access_token = account_info.ygg_token,
+        .username = "sketched_test",
+        .uuid = "00000000-0000-0000-0000-000000000000"
     };
 
     char **jvm_args  = build_jvm_args(json, &ctx);
     char **game_args = build_game_args(json, &ctx);
 
-    system("rm -rf /tmp/tnt-mc-natives");
-    extract_natives(libraries);
+    //system("rm -rf /tmp/tnt-mc-natives");
+    extract_wrapper(json);
 
     int jvm_count = 0, game_count = 0;
     while (jvm_args[jvm_count])   jvm_count++;
@@ -169,6 +172,7 @@ static void launchmc(int dry, char *version)
 int main(int argc, char *argv[])
 {
     curl_global_init(CURL_GLOBAL_ALL);
+
 
     static struct option long_opts[] = {
         { "launch",    required_argument, 0, 'l' },
@@ -223,7 +227,7 @@ int main(int argc, char *argv[])
 
     if (instance)         { launchmc(0, instance);                     curl_global_cleanup(); return 0; }
     if (dry_arg)          { launchmc(1, dry_arg);                      curl_global_cleanup(); return 0; }
-    if (reqtype)          { list_versions(reqtype);                    curl_global_cleanup(); return 0; }
+    if (reqtype)          { list_available_versions(reqtype);                    curl_global_cleanup(); return 0; }
     if (reqversion)       { download_version(reqversion);              curl_global_cleanup(); return 0; }
     if (reqfabricversion) { list_fabric_versions(reqfabricversion);    curl_global_cleanup(); return 0; }
 

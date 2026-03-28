@@ -79,12 +79,12 @@ void download_files(char **urls, char **dests, int n) {
     curl_multi_cleanup(multi);
 }
 
-void download_file(const char *url, const char *dest) {
+int download_file(const char *url, const char *dest) {
     mkdirs(dest);
     // if (file_exists(dest)) return;
 
     FILE *fp = fopen(dest, "wb");
-    if (!fp) return;
+    if (!fp) return 1;
 
     CURL *easy = curl_easy_init();
     curl_easy_setopt(easy, CURLOPT_URL,            url);
@@ -94,4 +94,6 @@ void download_file(const char *url, const char *dest) {
     curl_easy_perform(easy);  // blocking, single file
     curl_easy_cleanup(easy);
     fclose(fp);
+
+    return 0;
 }

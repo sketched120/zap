@@ -1,0 +1,270 @@
+[13:44:38] [Datafixer Bootstrap/INFO]: 291 Datafixer optimizations took 541 milliseconds
+[13:44:42] [Render thread/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[13:44:42] [Render thread/INFO]: Setting user: sketched_test
+[13:44:42] [Render thread/INFO]: Backend library: LWJGL version 3.4.1+2
+[13:44:42] [Render thread/WARN]: Detected unexpected shutdown during last game startup: resetting fullscreen mode
+[13:44:43] [Download-2/ERROR]: Failed to fetch user properties
+com.mojang.authlib.exceptions.InvalidCredentialsException: Status: 401
+	at com.mojang.authlib.exceptions.MinecraftClientHttpException.toAuthenticationException(MinecraftClientHttpException.java:59)
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:150)
+	at net.minecraft.client.Minecraft.lambda$new$1(Minecraft.java:459)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Caused by: com.mojang.authlib.exceptions.MinecraftClientHttpException: Status: 401
+	at com.mojang.authlib.minecraft.client.MinecraftClient.readInputStream(MinecraftClient.java:103)
+	at com.mojang.authlib.minecraft.client.MinecraftClient.get(MinecraftClient.java:56)
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:121)
+	... 5 more
+[13:44:43] [Render thread/ERROR]: Couldn't set icon
+java.io.IOException: PNG header missing
+	at net.minecraft.util.PngInfo.validateHeader(PngInfo.java:50)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:154)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:109)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:101)
+	at com.mojang.blaze3d.platform.Window.setIcon(Window.java:199)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:553)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+[13:44:43] [Render thread/INFO]: Using optional rendering extensions: GL_ARB_buffer_storage, GL_KHR_debug, GL_ARB_vertex_attrib_binding, GL_ARB_direct_state_access, GL_EXT_texture_filter_anisotropic
+[13:44:43] [Render thread/WARN]: Failed to parse vanilla pack metadata
+com.google.gson.JsonParseException: java.io.EOFException: End of input at line 1 column 1 path $
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:522)
+	at net.minecraft.util.GsonHelper.parse(GsonHelper.java:557)
+	at net.minecraft.server.packs.resources.ResourceMetadata.fromJsonStream(ResourceMetadata.java:32)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:35)
+	at net.minecraft.server.packs.VanillaPackResources.getMetadataSection(VanillaPackResources.java:140)
+	at net.minecraft.server.packs.repository.Pack.readPackMetadata(Pack.java:56)
+	at net.minecraft.server.packs.repository.Pack.readMetaAndCreate(Pack.java:41)
+	at net.minecraft.client.resources.ClientPackSource.createVanillaPack(ClientPackSource.java:109)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.loadPacks(BuiltInPackSource.java:46)
+	at net.minecraft.server.packs.repository.PackRepository.discoverAvailable(PackRepository.java:43)
+	at net.minecraft.server.packs.repository.PackRepository.reload(PackRepository.java:36)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:574)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+Caused by: java.io.EOFException: End of input at line 1 column 1 path $
+	at com.google.gson.stream.JsonReader.nextNonWhitespace(JsonReader.java:1605)
+	at com.google.gson.stream.JsonReader.doPeek(JsonReader.java:679)
+	at com.google.gson.stream.JsonReader.peek(JsonReader.java:547)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:85)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:35)
+	at com.google.gson.internal.bind.TypeAdapters$32$1.read(TypeAdapters.java:915)
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:516)
+	... 12 more
+[13:44:43] [Render thread/WARN]: Failed to parse vanilla pack metadata
+com.google.gson.JsonParseException: java.io.EOFException: End of input at line 1 column 1 path $
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:522)
+	at net.minecraft.util.GsonHelper.parse(GsonHelper.java:557)
+	at net.minecraft.server.packs.resources.ResourceMetadata.fromJsonStream(ResourceMetadata.java:32)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:35)
+	at net.minecraft.server.packs.VanillaPackResources.getMetadataSection(VanillaPackResources.java:140)
+	at net.minecraft.server.packs.repository.Pack.readPackMetadata(Pack.java:67)
+	at net.minecraft.server.packs.repository.Pack.readMetaAndCreate(Pack.java:41)
+	at net.minecraft.client.resources.ClientPackSource.createVanillaPack(ClientPackSource.java:109)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.loadPacks(BuiltInPackSource.java:46)
+	at net.minecraft.server.packs.repository.PackRepository.discoverAvailable(PackRepository.java:43)
+	at net.minecraft.server.packs.repository.PackRepository.reload(PackRepository.java:36)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:574)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+Caused by: java.io.EOFException: End of input at line 1 column 1 path $
+	at com.google.gson.stream.JsonReader.nextNonWhitespace(JsonReader.java:1605)
+	at com.google.gson.stream.JsonReader.doPeek(JsonReader.java:679)
+	at com.google.gson.stream.JsonReader.peek(JsonReader.java:547)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:85)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:35)
+	at com.google.gson.internal.bind.TypeAdapters$32$1.read(TypeAdapters.java:915)
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:516)
+	... 12 more
+[13:44:43] [Render thread/WARN]: Failed to parse vanilla pack metadata
+com.google.gson.JsonParseException: java.io.EOFException: End of input at line 1 column 1 path $
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:522)
+	at net.minecraft.util.GsonHelper.parse(GsonHelper.java:557)
+	at net.minecraft.server.packs.resources.ResourceMetadata.fromJsonStream(ResourceMetadata.java:32)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:35)
+	at net.minecraft.server.packs.VanillaPackResources.getMetadataSection(VanillaPackResources.java:140)
+	at net.minecraft.server.packs.repository.Pack.readPackMetadata(Pack.java:72)
+	at net.minecraft.server.packs.repository.Pack.readMetaAndCreate(Pack.java:41)
+	at net.minecraft.client.resources.ClientPackSource.createVanillaPack(ClientPackSource.java:109)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.loadPacks(BuiltInPackSource.java:46)
+	at net.minecraft.server.packs.repository.PackRepository.discoverAvailable(PackRepository.java:43)
+	at net.minecraft.server.packs.repository.PackRepository.reload(PackRepository.java:36)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:574)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+Caused by: java.io.EOFException: End of input at line 1 column 1 path $
+	at com.google.gson.stream.JsonReader.nextNonWhitespace(JsonReader.java:1605)
+	at com.google.gson.stream.JsonReader.doPeek(JsonReader.java:679)
+	at com.google.gson.stream.JsonReader.peek(JsonReader.java:547)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:85)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:35)
+	at com.google.gson.internal.bind.TypeAdapters$32$1.read(TypeAdapters.java:915)
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:516)
+	... 12 more
+[13:44:43] [Render thread/ERROR]: Failed to open pack /home/sketched/.minecraftz/assets/objects/42/422375e673788fdea63e772de1132f1af2e3073b
+java.util.zip.ZipException: zip file is empty
+	at java.base/java.util.zip.ZipFile$Source.zerror(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.findEND(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.initCEN(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.get(Unknown Source)
+	at java.base/java.util.zip.ZipFile$CleanableResource.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at net.minecraft.server.packs.FilePackResources$SharedZipFileAccess.getOrCreateZipFile(FilePackResources.java:168)
+	at net.minecraft.server.packs.FilePackResources.getResource(FilePackResources.java:59)
+	at net.minecraft.server.packs.FilePackResources.getRootResource(FilePackResources.java:42)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:30)
+	at net.minecraft.server.packs.AbstractPackResources.getMetadataSection(AbstractPackResources.java:23)
+	at net.minecraft.server.packs.repository.Pack.readPackMetadata(Pack.java:56)
+	at net.minecraft.server.packs.repository.Pack.readMetaAndCreate(Pack.java:41)
+	at net.minecraft.client.resources.ClientPackSource.createBuiltinPack(ClientPackSource.java:114)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.lambda$discoverPacksInPath$1(BuiltInPackSource.java:82)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.lambda$listBundledPacks$0(BuiltInPackSource.java:67)
+	at java.base/java.util.HashMap.forEach(Unknown Source)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.listBundledPacks(BuiltInPackSource.java:66)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.loadPacks(BuiltInPackSource.java:50)
+	at net.minecraft.server.packs.repository.PackRepository.discoverAvailable(PackRepository.java:43)
+	at net.minecraft.server.packs.repository.PackRepository.reload(PackRepository.java:36)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:574)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+[13:44:43] [Render thread/WARN]: Missing metadata in pack high_contrast
+[13:44:43] [Render thread/ERROR]: Failed to open pack /home/sketched/.minecraftz/assets/objects/a9/a9945dba2bc4d4841c0dae23faaa8be9bd9e56f1
+java.util.zip.ZipException: zip file is empty
+	at java.base/java.util.zip.ZipFile$Source.zerror(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.findEND(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.initCEN(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile$Source.get(Unknown Source)
+	at java.base/java.util.zip.ZipFile$CleanableResource.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at java.base/java.util.zip.ZipFile.<init>(Unknown Source)
+	at net.minecraft.server.packs.FilePackResources$SharedZipFileAccess.getOrCreateZipFile(FilePackResources.java:168)
+	at net.minecraft.server.packs.FilePackResources.getResource(FilePackResources.java:59)
+	at net.minecraft.server.packs.FilePackResources.getRootResource(FilePackResources.java:42)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:30)
+	at net.minecraft.server.packs.AbstractPackResources.getMetadataSection(AbstractPackResources.java:23)
+	at net.minecraft.server.packs.repository.Pack.readPackMetadata(Pack.java:56)
+	at net.minecraft.server.packs.repository.Pack.readMetaAndCreate(Pack.java:41)
+	at net.minecraft.client.resources.ClientPackSource.createBuiltinPack(ClientPackSource.java:114)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.lambda$discoverPacksInPath$1(BuiltInPackSource.java:82)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.lambda$listBundledPacks$0(BuiltInPackSource.java:67)
+	at java.base/java.util.HashMap.forEach(Unknown Source)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.listBundledPacks(BuiltInPackSource.java:66)
+	at net.minecraft.server.packs.repository.BuiltInPackSource.loadPacks(BuiltInPackSource.java:50)
+	at net.minecraft.server.packs.repository.PackRepository.discoverAvailable(PackRepository.java:43)
+	at net.minecraft.server.packs.repository.PackRepository.reload(PackRepository.java:36)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:574)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+[13:44:43] [Render thread/WARN]: Missing metadata in pack programmer_art
+[13:44:43] [Render thread/ERROR]: Error while loading the narrator
+com.mojang.text2speech.Narrator$InitializeException: Failed to load library flite
+	at com.mojang.text2speech.NarratorLinux$FliteLibrary.loadNative(NarratorLinux.java:81)
+	at com.mojang.text2speech.NarratorLinux.<init>(NarratorLinux.java:18)
+	at com.mojang.text2speech.Narrator.getNarrator(Narrator.java:41)
+	at net.minecraft.client.GameNarrator.<init>(GameNarrator.java:20)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:726)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+Caused by: java.lang.UnsatisfiedLinkError: Unable to load library 'flite':
+libflite.so: cannot open shared object file: No such file or directory
+libflite.so: cannot open shared object file: No such file or directory
+Native library (linux-x86-64/libflite.so) not found in resource path (/home/sketched/.minecraftz/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar:/home/sketched/.minecraftz/libraries/com/azure/azure-json/1.4.0/azure-json-1.4.0.jar:/home/sketched/.minecraftz/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar:/home/sketched/.minecraftz/libraries/com/google/code/gson/gson/2.13.2/gson-2.13.2.jar:/home/sketched/.minecraftz/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/sketched/.minecraftz/libraries/com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar:/home/sketched/.minecraftz/libraries/com/ibm/icu/icu4j/77.1/icu4j-77.1.jar:/home/sketched/.minecraftz/libraries/com/microsoft/azure/msal4j/1.23.1/msal4j-1.23.1.jar:/home/sketched/.minecraftz/libraries/com/mojang/authlib/7.0.63/authlib-7.0.63.jar:/home/sketched/.minecraftz/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/datafixerupper/9.0.19/datafixerupper-9.0.19.jar:/home/sketched/.minecraftz/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar:/home/sketched/.minecraftz/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-linux.jar:/home/sketched/.minecraftz/libraries/com/mojang/logging/1.6.11/logging-1.6.11.jar:/home/sketched/.minecraftz/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/text2speech/1.18.11/text2speech-1.18.11.jar:/home/sketched/.minecraftz/libraries/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar:/home/sketched/.minecraftz/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-buffer/4.2.7.Final/netty-buffer-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-base/4.2.7.Final/netty-codec-base-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-compression/4.2.7.Final/netty-codec-compression-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-http/4.2.7.Final/netty-codec-http-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-common/4.2.7.Final/netty-common-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-handler/4.2.7.Final/netty-handler-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-resolver/4.2.7.Final/netty-resolver-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-classes-epoll/4.2.7.Final/netty-transport-classes-epoll-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-classes-kqueue/4.2.7.Final/netty-transport-classes-kqueue-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-unix-common/4.2.7.Final/netty-transport-native-unix-common-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport/4.2.7.Final/netty-transport-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar:/home/sketched/.minecraftz/libraries/net/java/dev/jna/jna-platform/5.17.0/jna-platform-5.17.0.jar:/home/sketched/.minecraftz/libraries/net/java/dev/jna/jna/5.17.0/jna-5.17.0.jar:/home/sketched/.minecraftz/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/sketched/.minecraftz/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/sketched/.minecraftz/libraries/org/apache/commons/commons-lang3/3.19.0/commons-lang3-3.19.0.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-api/2.25.2/log4j-api-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-core/2.25.2/log4j-core-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.25.2/log4j-slf4j2-impl-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar:/home/sketched/.minecraftz/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar:/home/sketched/.minecraftz/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar:/home/sketched/.minecraftz/versions/26.1/26.1.jar)
+	at com.sun.jna.NativeLibrary.loadLibrary(NativeLibrary.java:325)
+	at com.sun.jna.NativeLibrary.getInstance(NativeLibrary.java:481)
+	at com.sun.jna.NativeLibrary.getInstance(NativeLibrary.java:423)
+	at com.mojang.text2speech.NarratorLinux$FliteLibrary.loadNative(NarratorLinux.java:79)
+	... 5 more
+	Suppressed: java.lang.UnsatisfiedLinkError: libflite.so: cannot open shared object file: No such file or directory
+		at com.sun.jna.Native.open(Native Method)
+		at com.sun.jna.NativeLibrary.loadLibrary(NativeLibrary.java:213)
+		... 8 more
+	Suppressed: java.lang.UnsatisfiedLinkError: libflite.so: cannot open shared object file: No such file or directory
+		at com.sun.jna.Native.open(Native Method)
+		at com.sun.jna.NativeLibrary.loadLibrary(NativeLibrary.java:226)
+		... 8 more
+	Suppressed: java.io.IOException: Native library (linux-x86-64/libflite.so) not found in resource path (/home/sketched/.minecraftz/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar:/home/sketched/.minecraftz/libraries/com/azure/azure-json/1.4.0/azure-json-1.4.0.jar:/home/sketched/.minecraftz/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar:/home/sketched/.minecraftz/libraries/com/google/code/gson/gson/2.13.2/gson-2.13.2.jar:/home/sketched/.minecraftz/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/sketched/.minecraftz/libraries/com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar:/home/sketched/.minecraftz/libraries/com/ibm/icu/icu4j/77.1/icu4j-77.1.jar:/home/sketched/.minecraftz/libraries/com/microsoft/azure/msal4j/1.23.1/msal4j-1.23.1.jar:/home/sketched/.minecraftz/libraries/com/mojang/authlib/7.0.63/authlib-7.0.63.jar:/home/sketched/.minecraftz/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/datafixerupper/9.0.19/datafixerupper-9.0.19.jar:/home/sketched/.minecraftz/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar:/home/sketched/.minecraftz/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-linux.jar:/home/sketched/.minecraftz/libraries/com/mojang/logging/1.6.11/logging-1.6.11.jar:/home/sketched/.minecraftz/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar:/home/sketched/.minecraftz/libraries/com/mojang/text2speech/1.18.11/text2speech-1.18.11.jar:/home/sketched/.minecraftz/libraries/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar:/home/sketched/.minecraftz/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-buffer/4.2.7.Final/netty-buffer-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-base/4.2.7.Final/netty-codec-base-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-compression/4.2.7.Final/netty-codec-compression-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-codec-http/4.2.7.Final/netty-codec-http-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-common/4.2.7.Final/netty-common-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-handler/4.2.7.Final/netty-handler-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-resolver/4.2.7.Final/netty-resolver-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-classes-epoll/4.2.7.Final/netty-transport-classes-epoll-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-classes-kqueue/4.2.7.Final/netty-transport-classes-kqueue-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport-native-unix-common/4.2.7.Final/netty-transport-native-unix-common-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/io/netty/netty-transport/4.2.7.Final/netty-transport-4.2.7.Final.jar:/home/sketched/.minecraftz/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar:/home/sketched/.minecraftz/libraries/net/java/dev/jna/jna-platform/5.17.0/jna-platform-5.17.0.jar:/home/sketched/.minecraftz/libraries/net/java/dev/jna/jna/5.17.0/jna-5.17.0.jar:/home/sketched/.minecraftz/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/sketched/.minecraftz/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/sketched/.minecraftz/libraries/org/apache/commons/commons-lang3/3.19.0/commons-lang3-3.19.0.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-api/2.25.2/log4j-api-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-core/2.25.2/log4j-core-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.25.2/log4j-slf4j2-impl-2.25.2.jar:/home/sketched/.minecraftz/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar:/home/sketched/.minecraftz/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar:/home/sketched/.minecraftz/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1.jar:/home/sketched/.minecraftz/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-linux.jar:/home/sketched/.minecraftz/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar:/home/sketched/.minecraftz/versions/26.1/26.1.jar)
+		at com.sun.jna.Native.extractFromResourcePath(Native.java:1141)
+		at com.sun.jna.NativeLibrary.loadLibrary(NativeLibrary.java:297)
+		... 8 more
+[13:44:43] [Render thread/INFO]: Reloading ResourceManager: vanilla
+[13:44:43] [Render thread/WARN]: Failed to parse vanilla pack metadata
+com.google.gson.JsonParseException: java.io.EOFException: End of input at line 1 column 1 path $
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:522)
+	at net.minecraft.util.GsonHelper.parse(GsonHelper.java:557)
+	at net.minecraft.server.packs.resources.ResourceMetadata.fromJsonStream(ResourceMetadata.java:32)
+	at net.minecraft.server.packs.AbstractPackResources.loadMetadata(AbstractPackResources.java:35)
+	at net.minecraft.server.packs.VanillaPackResources.getMetadataSection(VanillaPackResources.java:140)
+	at net.minecraft.server.packs.resources.MultiPackResourceManager.getPackFilterSection(MultiPackResourceManager.java:63)
+	at net.minecraft.server.packs.resources.MultiPackResourceManager.<init>(MultiPackResourceManager.java:33)
+	at net.minecraft.server.packs.resources.ReloadableResourceManager.createReload(ReloadableResourceManager.java:46)
+	at net.minecraft.client.Minecraft.<init>(Minecraft.java:744)
+	at net.minecraft.client.main.Main.main(Main.java:232)
+Caused by: java.io.EOFException: End of input at line 1 column 1 path $
+	at com.google.gson.stream.JsonReader.nextNonWhitespace(JsonReader.java:1605)
+	at com.google.gson.stream.JsonReader.doPeek(JsonReader.java:679)
+	at com.google.gson.stream.JsonReader.peek(JsonReader.java:547)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:85)
+	at com.google.gson.internal.bind.JsonElementTypeAdapter.read(JsonElementTypeAdapter.java:35)
+	at com.google.gson.internal.bind.TypeAdapters$32$1.read(TypeAdapters.java:915)
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:516)
+	... 9 more
+[13:44:44] [Render thread/ERROR]: Unreported exception thrown!
+java.util.concurrent.CompletionException: java.io.UncheckedIOException: java.io.IOException: PNG header missing
+	at java.base/java.util.concurrent.CompletableFuture.wrapInCompletionException(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at net.minecraft.server.packs.resources.SimpleReloadInstance.lambda$prepareTasks$1(SimpleReloadInstance.java:51)
+	at java.base/java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask$InterruptibleTask.exec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(Unknown Source)
+Caused by: java.io.UncheckedIOException: java.io.IOException: PNG header missing
+	at net.minecraft.client.renderer.texture.TextureManager.lambda$scheduleLoad$0(TextureManager.java:184)
+	... 9 more
+Caused by: java.io.IOException: PNG header missing
+	at net.minecraft.util.PngInfo.validateHeader(PngInfo.java:50)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:154)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:109)
+	at com.mojang.blaze3d.platform.NativeImage.read(NativeImage.java:101)
+	at net.minecraft.client.renderer.texture.TextureContents.load(TextureContents.java:23)
+	at net.minecraft.client.renderer.texture.CubeMapTexture.loadContents(CubeMapTexture.java:25)
+	at net.minecraft.client.renderer.texture.TextureManager.loadContents(TextureManager.java:170)
+	at net.minecraft.client.renderer.texture.TextureManager.lambda$scheduleLoad$0(TextureManager.java:182)
+	... 9 more
+[13:44:44] [Worker-Main-2/WARN]: Invalid sounds.json in resourcepack: 'vanilla'
+com.google.gson.JsonParseException: java.io.EOFException: End of input at line 1 column 1 path $
+	at net.minecraft.util.GsonHelper.fromNullableJson(GsonHelper.java:532)
+	at net.minecraft.util.GsonHelper.fromJson(GsonHelper.java:537)
+	at net.minecraft.client.sounds.SoundManager.prepare(SoundManager.java:80)
+	at net.minecraft.client.sounds.SoundManager.prepare(SoundManager.java:41)
+	at net.minecraft.server.packs.resources.SimplePreparableReloadListener.lambda$reload$0(SimplePreparableReloadListener.java:13)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at net.minecraft.server.packs.resources.SimpleReloadInstance.lambda$prepareTasks$1(SimpleReloadInstance.java:51)
+	at java.base/java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask$InterruptibleTask.exec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(Unknown Source)
+Caused by: java.io.EOFException: End of input at line 1 column 1 path $
+	at com.google.gson.stream.JsonReader.nextNonWhitespace(JsonReader.java:1605)
+	at com.google.gson.stream.JsonReader.doPeek(JsonReader.java:679)
+	at com.google.gson.stream.JsonReader.peek(JsonReader.java:547)
+	at com.google.gson.internal.bind.MapTypeAdapterFactory$Adapter.read(MapTypeAdapterFactory.java:177)
+	at com.google.gson.internal.bind.MapTypeAdapterFactory$Adapter.read(MapTypeAdapterFactory.java:161)
+	at net.minecraft.util.GsonHelper.fromNullableJson(GsonHelper.java:530)
+	... 13 more
+[13:44:44] [Download-2/INFO]: Could not authorize you against Realms server: javax.ws.rs.BadRequestException: Invalid session
+[13:44:44] [Download-2/ERROR]: Failed to fetch Realms feature flags
+com.mojang.realmsclient.exception.RealmsServiceException: Realms authentication error with message 'javax.ws.rs.BadRequestException: Invalid session'
+	at com.mojang.realmsclient.client.RealmsClient.execute(RealmsClient.java:526)
+	at com.mojang.realmsclient.client.RealmsClient.fetchFeatureFlags(RealmsClient.java:186)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)

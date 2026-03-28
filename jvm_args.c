@@ -1,9 +1,10 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <cjson/cJSON.h>
 
-#include "include/json.h"
-#include "include/jvm_args.h"
+#include "utils.h"
+#include "jvm_args.h"
 
 static char *resolve_var(const char *arg, LaunchContext *ctx) {
     size_t buf_size = strlen(ctx->classpath) + 8192;

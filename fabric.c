@@ -3,10 +3,10 @@
 #include <string.h>
 #include <cjson/cJSON.h>
 
-#include "include/json.h"
-#include "include/download.h"
-#include "include/fabric.h"
-#include "include/version.h"
+#include "utils.h"
+#include "download.h"
+#include "fabric.h"
+#include "version.h"
 
 #ifndef FABRIC_MANIFEST_LINK
 #define FABRIC_MANIFEST_LINK "https://meta.fabricmc.net/v2/versions/loader/"
@@ -56,10 +56,10 @@ void launch_loader_handler(cJSON *child_json)
     // do NOT cJSON_Delete(parent_json) — child holds references into it
 }
 
-void download_fabric_libraries(cJSON *json)
-{
+void download_fabric_libraries(cJSON *json) {
     cJSON *libraries = cJSON_GetObjectItem(json, "libraries");
-    cJSON *lib;
+    download_libraries(libraries);
+    /*cJSON *lib;
     cJSON_ArrayForEach(lib, libraries) {
         cJSON *name = cJSON_GetObjectItem(lib, "name");
         cJSON *url  = cJSON_GetObjectItem(lib, "url");
@@ -78,12 +78,12 @@ void download_fabric_libraries(cJSON *json)
         snprintf(urlstring, sizeof(urlstring), "%s/%s", url->valuestring, libname);
         snprintf(libpath,   sizeof(libpath),   MINECRAFT_PATH "/libraries/%s", libname);
 
-        if (!file_exists(libpath)) {
+        if (file_exists(libpath)) {
             printf("downloading %s from %s\n", name->valuestring, urlstring);
             download_file(urlstring, libpath);
         }
         free(libname);
-    }
+    }*/
 }
 
 void list_fabric_versions(char *req_mc_version)
@@ -94,14 +94,12 @@ void list_fabric_versions(char *req_mc_version)
     snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "%s", req_mc_version);
     snprintf(tmp_path,   sizeof(tmp_path),   "/tmp/tnt/fabric_temp_%s.json", req_mc_version);
 
-    mkdirs(tmp_path);
-    if (!file_exists(tmp_path)) {
-        int status = download_file(fabric_url, tmp_path);
-        if (status == 1) {
-            fprintf(stderr, "failed to download manifest, does that version exist?\n");
-            return;
+    int status = download_file(fabric_url, tmp_path);
+    if (status == 1) {
+        fprintf(stderr, "failed to download manifest, does that version exist?\n");
+        return;
         }
-    }
+    
 
     char *temp_buf = read_file(tmp_path);
     cJSON *json = cJSON_Parse(temp_buf);
@@ -117,7 +115,7 @@ void list_fabric_versions(char *req_mc_version)
         cJSON *loader  = cJSON_GetObjectItem(item, "loader");
         cJSON *version = cJSON_GetObjectItem(loader, "version");
         printf("%-30s %s\n", version->valuestring, req_mc_version);
-        fflush(stdout);
+        
     }
     cJSON_Delete(json);
     free(temp_buf);
@@ -131,14 +129,13 @@ char *get_latest_fabric_loader(char *req_mc_version)
     snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "%s", req_mc_version);
     snprintf(tmp_path,   sizeof(tmp_path),   "/tmp/tnt/fabric_temp_%s.json", req_mc_version);
 
-    mkdirs(tmp_path);
-    if (!file_exists(tmp_path)) {
+    
         int status = download_file(fabric_url, tmp_path);
         if (status == 1) {
             fprintf(stderr, "failed to download manifest\n");
             return NULL;
         }
-    }
+    
 
     char *temp_buf = read_file(tmp_path);
     cJSON *json = cJSON_Parse(temp_buf);
@@ -169,6 +166,5 @@ void download_fabric_manifest(char *req_mc_version, char *req_loader_version)
              "https://meta.fabricmc.net/v2/versions/loader/%s/%s/profile/json",
              req_mc_version, req_loader_version);
 
-    mkdirs(manifest_path);
     download_file(url_path, manifest_path);
 }

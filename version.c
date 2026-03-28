@@ -1,5 +1,6 @@
 // handles the downloading of stuff,
 
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +9,14 @@
 #include "utils.h"
 #include "download.h"
 
-void list_available_versions(cJSON *manifest_json, char *vertype) {
+void download_version_manifest() {
+    download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", MINECRAFT_PATH "/version_manifest.json");
+}
+void list_available_versions(char *vertype) {
     
+    download_version_manifest();
+    char *vm_buf = read_file(MINECRAFT_PATH "/version_manifest.json");
+    cJSON *manifest_json = cJSON_Parse(vm_buf);
     cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
     size_t size = cJSON_GetArraySize(versions);
     
@@ -21,6 +28,9 @@ void list_available_versions(cJSON *manifest_json, char *vertype) {
             printf("%-30s %s\n", id->valuestring,type->valuestring );
         }
     }
+
+    cJSON_Delete(manifest_json);
+    free(vm_buf);
 }
 
 void download_version_json(cJSON *manifest_json, char *id_c) {
@@ -48,8 +58,8 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
     download_file(version_url, dest_path);
 }
 
-void download_libraries(cJSON *version_json) {
-    cJSON *libraries = cJSON_GetObjectItem(version_json, "libraries");
+void download_libraries(cJSON *libraries) {
+    
     cJSON *library;
 
     int start = 0;
@@ -59,16 +69,20 @@ void download_libraries(cJSON *version_json) {
     char **dests = malloc(libcount * sizeof(char *));
     
     cJSON_ArrayForEach(library, libraries) {
-        if (is_allowed_on_linux(library) == 0) { continue; }
+        if (is_allowed_on_linux(library) == false) { continue; }
         cJSON *downloads = cJSON_GetObjectItem(library, "downloads");
         cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
 
+        char *path = cJSON_GetObjectItem(artifact, "path")->valuestring;
         urls[start] = cJSON_GetObjectItem(artifact, "url")->valuestring;
-        dests[start] = cJSON_GetObjectItem(artifact, "path")->valuestring;
+
+        size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+        dests[start] = malloc(len);
+        snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
         start++;
     }
 
-    download_files(urls, dests, libcount);
+    download_files(urls, dests, start);
 
     free(urls);
     free(dests);
@@ -97,9 +111,13 @@ void download_assets(cJSON *version_json) {
     cJSON *index_url = cJSON_GetObjectItem(index_details, "url");
 
     char dest_path[256];
-    snprintf(dest_path, sizeof(dest_path), MINECRAFT_PATH "/versions/indexes/%s.json", index_id);
+    snprintf(dest_path, sizeof(dest_path), MINECRAFT_PATH "/assets/indexes/%s.json", index_id);
 
-    download_file(index_url->valuestring, dest_path);
+    int status = download_file(index_url->valuestring, dest_path);
+    if (status == 1) {
+        printf("failed to download asset index\n");
+        return;
+    }
 
     free(index_id);
 
@@ -135,7 +153,7 @@ void download_assets(cJSON *version_json) {
         object = object->next;
     }
 
-    download_files(urls, dests, a_count);
+    download_files(urls, dests, start);
 
     for (int i = 0; i < a_count; i++) {
         free(urls[i]);
@@ -150,3 +168,42 @@ void download_assets(cJSON *version_json) {
     
 
 }
+
+void download_version(char *req_v) {
+    printf("downloading version manifest...\n");
+    download_version_manifest();
+
+    char *v_man = read_file(MINECRAFT_PATH "/version_manifest.json");
+    cJSON *v_json = cJSON_Parse(v_man);
+
+    printf("downloading %s.json...\n", req_v);
+    download_version_json(v_json, req_v);
+
+    cJSON_Delete(v_json);
+    free(v_man);
+
+    char vj_path[256];
+    snprintf(vj_path, sizeof(vj_path), MINECRAFT_PATH "/versions/%s/%s.json", req_v, req_v);
+
+    char *vj_buf = read_file(vj_path);
+    cJSON *vj_json = cJSON_Parse(vj_buf);
+
+    cJSON *libraries = cJSON_GetObjectItem(vj_json, "libraries");
+    printf("downloading libraries...\n");
+    download_libraries(libraries);
+
+    printf("downloading client...\n");
+    download_client(vj_json);
+
+    printf("downloading assets...\n");
+    download_assets(vj_json);
+
+    printf("%s successfully installed.", req_v);
+    printf("launch with -l %s\n", req_v);
+
+    cJSON_Delete(vj_json);
+    free(vj_buf);
+
+}
+
+

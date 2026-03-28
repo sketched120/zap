@@ -1,7 +1,8 @@
 #ifndef DOWNLOAD_H
 #define DOWNLOAD_H
 
+void mkdirs(const char *path);
 void download_files(char **urls, char **dests, int n);
-void download_file(char *url, char *dest);
+int download_file(char *url, char *dest);
 
 #endif
