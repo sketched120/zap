@@ -51,36 +51,49 @@ void extract_natives(char *jar, char *dest) {
 
   zip_close(zip);
 }
+
 void extract_wrapper(cJSON *json) {
-    
-    cJSON *id = cJSON_GetObjectItem(json, "id");
-    printf("extract_wrapper called for: %s\n", id->valuestring);
-
+    cJSON *id        = cJSON_GetObjectItem(json, "id");
     cJSON *libraries = cJSON_GetObjectItem(json, "libraries");
-    printf("library count: %d\n", cJSON_GetArraySize(libraries));
     cJSON *lib;
-  cJSON_ArrayForEach(lib, libraries) {
-    cJSON *name = cJSON_GetObjectItem(lib, "name");
-    if (!name) continue;
-    if (!strstr(name->valuestring, "natives-linux")) continue;
-    if (!is_allowed_on_linux(lib)) continue;
-
-    cJSON *downloads = cJSON_GetObjectItem(lib, "downloads");
-    if (!downloads) continue;
-    cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
-    if (!artifact) continue;
-    cJSON *path = cJSON_GetObjectItem(artifact, "path");
-    if (!path) continue;
-
-    char jar[512];
-    snprintf(jar, sizeof(jar), MINECRAFT_PATH "/libraries/%s", path->valuestring);
 
     char natives_dir[256];
-    snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH"/natives/%s",id->valuestring);
-    extract_natives(jar, natives_dir );
+    snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH "/natives/%s", id->valuestring);
+    mkdir(natives_dir, 0755);
+
+    cJSON_ArrayForEach(lib, libraries) {
+        if (!is_allowed_on_linux(lib)) continue;
+
+        cJSON *downloads = cJSON_GetObjectItem(lib, "downloads");
+        if (!downloads) continue;
+
+        char jar[512];
+        bool found = false;
+
+        cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
+        if (classifiers) {
+            cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
+            if (natives_linux) {
+                cJSON *path = cJSON_GetObjectItem(natives_linux, "path");
+                if (path) {
+                    snprintf(jar, sizeof(jar), MINECRAFT_PATH "/libraries/%s", path->valuestring);
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            cJSON *name = cJSON_GetObjectItem(lib, "name");
+            if (!name || !strstr(name->valuestring, "natives-linux")) continue;
+            cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
+            if (!artifact) continue;
+            cJSON *path = cJSON_GetObjectItem(artifact, "path");
+            if (!path) continue;
+            snprintf(jar, sizeof(jar), MINECRAFT_PATH "/libraries/%s", path->valuestring);
+            found = true;
+        }
+
+        if (!found) continue;
+        extract_natives(jar, natives_dir);
+    }
 }
-    
-
-   
-  }
-

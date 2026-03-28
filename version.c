@@ -1,6 +1,7 @@
 // handles the downloading of stuff,
 
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 
 #include "utils.h"
 #include "download.h"
+#include <errno.h>
 
 void download_version_manifest() {
     download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json", MINECRAFT_PATH "/version_manifest.json");
@@ -48,8 +50,7 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
             version_url = url->valuestring;
             break;
         } else {
-            printf("No such version found!\n");
-            return;
+            continue;
         }
     }
 
@@ -59,35 +60,52 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
 }
 
 void download_libraries(cJSON *libraries) {
-    
     cJSON *library;
-
     int start = 0;
     size_t libcount = cJSON_GetArraySize(libraries);
 
-    char **urls = malloc(libcount * sizeof(char *));
+    char **urls  = malloc(libcount * sizeof(char *));
     char **dests = malloc(libcount * sizeof(char *));
-    
+
     cJSON_ArrayForEach(library, libraries) {
-        if (is_allowed_on_linux(library) == false) { continue; }
-        cJSON *downloads = cJSON_GetObjectItem(library, "downloads");
-        cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
+    if (!is_allowed_on_linux(library)) continue;
 
-        char *path = cJSON_GetObjectItem(artifact, "path")->valuestring;
-        urls[start] = cJSON_GetObjectItem(artifact, "url")->valuestring;
+    cJSON *downloads = cJSON_GetObjectItem(library, "downloads");
+    if (!downloads) continue;
 
-        size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
-        dests[start] = malloc(len);
-        snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
-        start++;
+    // old format classifiers
+    cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
+    if (classifiers) {
+        cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
+        if (natives_linux) {
+            char *path = cJSON_GetObjectItem(natives_linux, "path")->valuestring;
+            char *url  = cJSON_GetObjectItem(natives_linux, "url")->valuestring;
+            size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+            dests[start] = malloc(len);
+            snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
+            urls[start] = url;
+            start++;
+        }
     }
+
+    // artifact
+    cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
+    if (!artifact) continue;
+    char *path = cJSON_GetObjectItem(artifact, "path")->valuestring;
+    char *url  = cJSON_GetObjectItem(artifact, "url")->valuestring;
+    size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+    dests[start] = malloc(len);
+    snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
+    urls[start] = url;
+    start++;
+}
 
     download_files(urls, dests, start);
 
+    for (int i = 0; i < start; i++)
+        free(dests[i]);
     free(urls);
     free(dests);
-
-
 }
 
 void download_client(cJSON *version_json) {
@@ -122,10 +140,17 @@ void download_assets(cJSON *version_json) {
     free(index_id);
 
     char *index_buf = read_file(dest_path);
+
+    
+
     cJSON *asset_index = cJSON_Parse(index_buf);
-
+    if (!asset_index) {
+    printf("PARSE ERROR at: %s\n", cJSON_GetErrorPtr());
+    free(index_buf);
+    return; // Stop the segfault!
+}
     cJSON *objects = cJSON_GetObjectItem(asset_index, "objects");
-
+    if (!objects) puts("error here!");
     int start = 0;
     size_t a_count = cJSON_GetArraySize(objects);
 
@@ -143,16 +168,18 @@ void download_assets(cJSON *version_json) {
         char url[256];
         char dest_path[256];
 
+       
         snprintf(url, sizeof(url), "%s/%.2s/%s", res_url, hash->valuestring, hash->valuestring);
         snprintf(dest_path, sizeof(dest_path), MINECRAFT_PATH "/assets/objects/%.2s/%s", hash->valuestring, hash->valuestring);
-
+        printf("added asset %s to download queue...\n", hash->valuestring);
+        printf("destination: %s\n", dest_path);
         urls[start] = strdup(url);
         dests[start] = strdup(dest_path);
         start++;
 
         object = object->next;
     }
-
+    printf("beginning download...\n");
     download_files(urls, dests, start);
 
     for (int i = 0; i < a_count; i++) {
