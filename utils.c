@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -40,7 +39,7 @@ bool is_allowed_on_linux(cJSON *library) {
 char *read_file(char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
-        fprintf(stderr, "failed to read file: %s\n", path);
+        fprintf(stderr, "Failed to read file: %s\n", path);
         return NULL;
     }
 
@@ -73,7 +72,7 @@ char *get_jar_path(char *libname) {
         if (group[i] == '.') group[i] = '/';
 
     char *out = malloc(1024);
-    if (!out) return NULL;
+    nullchkr(out, NULL);
 
     if (classifier)
         snprintf(out, 1024, "%s/%s/%s/%s-%s-%s.jar", group, artifact, version, artifact, version, classifier);
@@ -87,14 +86,16 @@ char *get_asset_index(cJSON *json) {
     cJSON *assetIndex = cJSON_GetObjectItem(json, "assetIndex");
     cJSON *id         = cJSON_GetObjectItem(assetIndex, "id");
     char *out = malloc(128);
-    if (!out) return NULL;
+    nullchkr(out, NULL);
     snprintf(out, 128, "%s", id->valuestring);
     return out;
 }
 
 void list_installed(void) {
     DIR *d = opendir(MINECRAFT_PATH "/versions");
-    if (!d) { perror("opendir"); return; }
+
+    nullchk(d);
+
     struct dirent *entry;
     while ((entry = readdir(d)) != NULL) {
         if (entry->d_name[0] == '.') continue;
@@ -106,7 +107,7 @@ void list_installed(void) {
 char *build_classpath(cJSON *version_json) {
     size_t buf_size = 131072;
     char *classpath = malloc(buf_size);
-    if (!classpath) return NULL;
+    nullchkr(classpath, NULL);
     classpath[0] = '\0';
 
     cJSON *libraries     = cJSON_GetObjectItem(version_json, "libraries");

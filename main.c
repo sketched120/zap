@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <curl/curl.h>
 
-// #include "include/auth.h"
-//#include "download.h"
+
 #include "utils.h"
 #include "jvm_args.h"
 #include "natives.h"

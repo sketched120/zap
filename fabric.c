@@ -13,7 +13,11 @@
 #endif
 
 void launch_loader_handler(cJSON *child_json) {
+  nullchk(child_json);
+
   cJSON *inherits_from = cJSON_GetObjectItem(child_json, "inheritsFrom");
+  nullchk(inherits_from);
+
   char *version = inherits_from->valuestring;
 
   char parent_json_path[256];
@@ -21,7 +25,10 @@ void launch_loader_handler(cJSON *child_json) {
            MINECRAFT_PATH "/versions/%s/%s.json", version, version);
 
   char *parent_buf = read_file(parent_json_path);
+  nullchk(parent_buf);
+
   cJSON *parent_json = cJSON_Parse(parent_buf);
+  nullchk(parent_json);
 
   cJSON_AddItemReferenceToObject(
       child_json, "assetIndex", cJSON_GetObjectItem(parent_json, "assetIndex"));

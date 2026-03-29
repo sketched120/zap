@@ -17,8 +17,13 @@ void download_version_manifest() {
 void list_available_versions(char *vertype) {
 
   download_version_manifest();
+
   char *vm_buf = read_file(MINECRAFT_PATH "/version_manifest.json");
+  nullchk(vm_buf);
+
   cJSON *manifest_json = cJSON_Parse(vm_buf);
+  nullchk(manifest_json);
+
   cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
   size_t size = cJSON_GetArraySize(versions);
 
@@ -39,6 +44,7 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
 
   // okay so we get the json, iterate through the array and strcmp the id,
   // if it matches, we break out of the loop
+  nullchk(manifest_json);
 
   cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
   cJSON *ver;
@@ -49,9 +55,12 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
     if (strcmp(id_j->valuestring, id_c) == 0) {
       version_url = url->valuestring;
       break;
-    } else {
-      continue;
     }
+  }
+
+  if (!version_url) {
+    fprintf(stderr, "No such version found.");
+    return;
   }
 
   char dest_path[256];
@@ -80,9 +89,17 @@ void download_libraries(cJSON *libraries) {
     cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
     if (classifiers) {
       cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
+
       if (natives_linux) {
-        char *path = cJSON_GetObjectItem(natives_linux, "path")->valuestring;
-        char *url = cJSON_GetObjectItem(natives_linux, "url")->valuestring;
+
+        cJSON *path_j = cJSON_GetObjectItem(natives_linux, "path");
+        cJSON *url_j = cJSON_GetObjectItem(natives_linux, "url");
+
+        if (!path_j || !url_j) continue;
+
+        char *path = path_j->valuestring;
+        char *url = url_j->valuestring;
+
         size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
         dests[start] = malloc(len);
         snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
@@ -95,8 +112,14 @@ void download_libraries(cJSON *libraries) {
     cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
     if (!artifact)
       continue;
-    char *path = cJSON_GetObjectItem(artifact, "path")->valuestring;
-    char *url = cJSON_GetObjectItem(artifact, "url")->valuestring;
+
+    cJSON *path_j = cJSON_GetObjectItem(artifact, "path");
+    cJSON *url_j = cJSON_GetObjectItem(artifact, "url");
+    
+    if (!path_j || !url_j) continue;
+
+    char *path = path_j->valuestring;
+    char *url = url_j->valuestring;
 
     size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
     dests[start] = malloc(len);
@@ -116,6 +139,7 @@ void download_libraries(cJSON *libraries) {
 
 void download_client(cJSON *version_json) {
 
+  nullchk(version_json);
   cJSON *id = cJSON_GetObjectItem(version_json, "id");
 
   cJSON *downloads = cJSON_GetObjectItem(version_json, "downloads");
@@ -123,6 +147,9 @@ void download_client(cJSON *version_json) {
   cJSON *cl_url = cJSON_GetObjectItem(client, "url");
 
   char cl_dest[256];
+
+  nullchk(id);
+  nullchk(cl_url);
   snprintf(cl_dest, sizeof(cl_dest), MINECRAFT_PATH "/versions/%s/%s.jar",
            id->valuestring, id->valuestring);
   download_file(cl_url->valuestring, cl_dest);
@@ -130,9 +157,13 @@ void download_client(cJSON *version_json) {
 
 void download_assets(cJSON *version_json) {
 
+  nullchk(version_json) 
   char *index_id = get_asset_index(version_json); // free this
   cJSON *index_details = cJSON_GetObjectItem(version_json, "assetIndex");
   cJSON *index_url = cJSON_GetObjectItem(index_details, "url");
+
+  nullchk(index_id);
+  nullchk(index_url);
 
   char dest_path[256];
   snprintf(dest_path, sizeof(dest_path),
@@ -140,7 +171,7 @@ void download_assets(cJSON *version_json) {
 
   int status = download_file(index_url->valuestring, dest_path);
   if (status == 1) {
-    printf("failed to download asset index\n");
+    printf("Failed to download asset index.\n");
     return;
   }
 
@@ -149,14 +180,10 @@ void download_assets(cJSON *version_json) {
   char *index_buf = read_file(dest_path);
 
   cJSON *asset_index = cJSON_Parse(index_buf);
-  if (!asset_index) {
-    printf("PARSE ERROR at: %s\n", cJSON_GetErrorPtr());
-    free(index_buf);
-    return; // Stop the segfault!
-  }
+  nullchk(asset_index);
+
   cJSON *objects = cJSON_GetObjectItem(asset_index, "objects");
-  if (!objects)
-    puts("error here!");
+  
   int start = 0;
   size_t a_count = cJSON_GetArraySize(objects);
 
@@ -169,6 +196,7 @@ void download_assets(cJSON *version_json) {
 
   while (object) {
     cJSON *hash = cJSON_GetObjectItem(object, "hash");
+    nullchk(hash);
 
     char url[256];
     char dest_path[256];
@@ -201,13 +229,16 @@ void download_assets(cJSON *version_json) {
 }
 
 void download_version(char *req_v) {
-  printf("downloading version manifest...\n");
+  printf("Downloading version manifest...\n");
   download_version_manifest();
 
   char *v_man = read_file(MINECRAFT_PATH "/version_manifest.json");
-  cJSON *v_json = cJSON_Parse(v_man);
+  nullchk(v_man);
 
-  printf("downloading %s.json...\n", req_v);
+  cJSON *v_json = cJSON_Parse(v_man);
+  nullchk(v_json);
+
+  printf("Downloading %s.json...\n", req_v);
   download_version_json(v_json, req_v);
 
   cJSON_Delete(v_json);
@@ -218,9 +249,14 @@ void download_version(char *req_v) {
            req_v, req_v);
 
   char *vj_buf = read_file(vj_path);
+  nullchk(vj_buf); 
+
   cJSON *vj_json = cJSON_Parse(vj_buf);
+  nullchk(vj_json);
 
   cJSON *libraries = cJSON_GetObjectItem(vj_json, "libraries");
+  nullchk(libraries);
+  
   printf("downloading libraries...\n");
   download_libraries(libraries);
 
