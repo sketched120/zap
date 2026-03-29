@@ -49,6 +49,7 @@ void download_files(char **urls, char **dests, int n) {
             if (!f) { next++; continue; }
 
             CURL *e = curl_easy_init();
+            printf("downloading: %s\n", urls[next]);
             curl_easy_setopt(e, CURLOPT_URL,            urls[next]);
             curl_easy_setopt(e, CURLOPT_WRITEFUNCTION,  write_cb);
             curl_easy_setopt(e, CURLOPT_WRITEDATA,      f);

@@ -66,8 +66,9 @@ static void launchmc(int dry, char *version)
     }
 
     if (cJSON_GetObjectItem(json, "inheritsFrom")) {
-        launch_loader_handler(json);
         download_fabric_libraries(json);
+        launch_loader_handler(json);
+        
     }
 
     cJSON *main_class   = cJSON_GetObjectItem(json, "mainClass");
