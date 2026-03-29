@@ -7,49 +7,49 @@
 #include <sys/stat.h>
 
 void extract_natives(char *jar, char *dest) {
-  zip_t *zip = zip_open(jar, 0, NULL);
-  if (!zip) {
-    printf("failed to open jar %s.\n", jar);
-    return;
-  }
-  mkdir(dest, 0755);
-  int cnt = zip_get_num_entries(zip, 0);
+    zip_t *zip = zip_open(jar, 0, NULL);
+    if (!zip) {
+        printf("Failed to open jar %s.\n", jar);
+        return;
+    }
+    mkdir(dest, 0755);
+    int cnt = zip_get_num_entries(zip, 0);
 
-  for (int i = 0; i < cnt; i++) {
-    const char *name = zip_get_name(zip, i, 0);
+    for (int i = 0; i < cnt; i++) {
+        const char *name = zip_get_name(zip, i, 0);
 
-    if (!strstr(name, ".so"))
-      continue;
-    
-    printf("found %s.\n", name);
-    const char *filename = strrchr(name, '/');
-    if (filename)
-      filename = filename + 1;
-    else
-      filename = name;
-    char dest_path[512];
-    snprintf(dest_path, sizeof(dest_path), "%s/%s", dest, filename);
-    /* size_t dest_size = strlen(dest) + strlen(name) + 20;
-    snprintf(dest, dest_size, )*/
-    if (file_exists(dest_path) == true) continue;
-    printf("extracting to: %s\n", dest_path);
-    zip_file_t *file = zip_fopen_index(zip, i, 0);
-    if (!file) { printf("zip_fopen_index failed\n"); continue; }
-    FILE *out = fopen(dest_path, "wb");
-    if (!out) { printf("fopen failed for %s \n", dest_path); continue; }
+        if (!strstr(name, ".so")) continue;
 
-    char buf[4096];
-    zip_int64_t bytes;
+        const char *filename = strrchr(name, '/');
+        if (filename)
+            filename = filename + 1;
+        else
+            filename = name;
 
-    while ((bytes = zip_fread(file, buf, sizeof(buf))) > 0) {
-      fwrite(buf, 1, bytes, out);
+        char dest_path[512];
+        snprintf(dest_path, sizeof(dest_path), "%s/%s", dest, filename);
+
+        if (file_exists(dest_path)) continue;
+
+        printf("Extracting native: %s\n", name);
+
+        zip_file_t *file = zip_fopen_index(zip, i, 0);
+        if (!file) { printf("zip_fopen_index failed\n"); continue; }
+
+        FILE *out = fopen(dest_path, "wb");
+        if (!out) { printf("fopen failed for %s\n", dest_path); continue; }
+
+        char buf[4096];
+        zip_int64_t bytes;
+
+        while ((bytes = zip_fread(file, buf, sizeof(buf))) > 0)
+            fwrite(buf, 1, bytes, out);
+
+        fclose(out);
+        zip_fclose(file);
     }
 
-    fclose(out);
-    zip_fclose(file);
-  }
-
-  zip_close(zip);
+    zip_close(zip);
 }
 
 void extract_wrapper(cJSON *json) {
