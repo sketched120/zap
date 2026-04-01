@@ -5,12 +5,12 @@
 #include <getopt.h>
 #include <curl/curl.h>
 
-#include "auth.h"
-#include "utils.h"
-#include "jvm_args.h"
-#include "natives.h"
-#include "version.h"
-#include "fabric.h"
+#include "include/auth.h"
+#include "include/utils.h"
+#include "include/jvm_args.h"
+#include "include/natives.h"
+#include "include/version.h"
+#include "include/fabric.h"
 
 static void print_help(const char *prog)
 {

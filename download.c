@@ -6,7 +6,8 @@
 #include <sys/stat.h>
 #include <curl/curl.h>
 
-#include "utils.h"
+#include "include/utils.h"
+
 void mkdirs(const char *path) {
     char tmp[1024];
     snprintf(tmp, sizeof(tmp), "%s", path);

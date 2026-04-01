@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "download.h"
-#include "fabric.h"
-#include "utils.h"
-#include "version.h"
+#include "include/download.h"
+#include "include/fabric.h"
+#include "include/utils.h"
+#include "include/version.h"
 
 #ifndef FABRIC_MANIFEST_LINK
 #define FABRIC_MANIFEST_LINK "https://meta.fabricmc.net/v2/versions/loader/"

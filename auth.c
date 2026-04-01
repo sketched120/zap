@@ -3,8 +3,9 @@
 #include <cjson/cJSON.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils.h"
-#include "auth.h"
+
+#include "include/utils.h"
+#include "include/auth.h"
 
 Account *get_account_details(cJSON *auth_json) {
     

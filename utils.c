@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <cjson/cJSON.h>
 
-#include "utils.h"
+#include "include/utils.h"
 
 bool is_allowed_on_linux(cJSON *library) {
     cJSON *rules = cJSON_GetObjectItem(library, "rules");

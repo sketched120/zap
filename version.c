@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "download.h"
-#include "utils.h"
+#include "include/download.h"
+#include "include/utils.h"
 
 void download_version_manifest() {
   download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json",

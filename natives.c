@@ -3,7 +3,7 @@
 #include <string.h>
 #include <zip.h>
 
-#include "utils.h"
+#include "include/utils.h"
 #include <sys/stat.h>
 
 void extract_natives(char *jar, char *dest) {
