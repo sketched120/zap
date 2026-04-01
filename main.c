@@ -1,10 +1,11 @@
+#include <cjson/cJSON.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <curl/curl.h>
 
-
+#include "auth.h"
 #include "utils.h"
 #include "jvm_args.h"
 #include "natives.h"
@@ -26,7 +27,7 @@ static void print_help(const char *prog)
 
 static void free_launch_resources(char *classpath, char **jvm_args,
                                   char **game_args, char *asset_index,
-                                  cJSON *json, char *jsonbuf)
+                                  cJSON *json, cJSON *auth_json, char *jsonbuf)
 {
     free(classpath);
     if (jvm_args) {
@@ -41,6 +42,7 @@ static void free_launch_resources(char *classpath, char **jvm_args,
     }
     free(asset_index);
     cJSON_Delete(json);
+    cJSON_Delete(auth_json);
     free(jsonbuf);
 }
 
@@ -90,17 +92,19 @@ static void launchmc(int dry, char *version)
     char *asset_index = get_asset_index(json);
     char *classpath   = build_classpath(json);
 
-    char *accounts_path = MINECRAFT_PATH "/accounts.json";
-    /* if (!file_exists(accounts_path)) {
-        fprintf(stderr, "error: no accounts.json found, create one from PrismLauncher\n");
+    char *accounts_buf = read_file(MINECRAFT_PATH "/accounts.json");
+    cJSON *accounts_json = cJSON_Parse(accounts_buf);
+     if (!accounts_buf) {
+        fprintf(stderr, " Failed to read accounts.json, create one from PrismLauncher\n");
         free(classpath);
         free(asset_index);
         cJSON_Delete(json);
         free(jsonbuf);
         return;
-    } */
+    } 
+    free(accounts_buf);
 
-    // Account account_info = get_account_details(accounts_path);
+    Account *acc = get_account_details(accounts_json);
     char natives_dir[256];
     snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH"/natives/%s", version);
     LaunchContext ctx = {
@@ -110,17 +114,15 @@ static void launchmc(int dry, char *version)
         .assets_dir   = MINECRAFT_PATH "/assets/",
         .asset_index  = asset_index,
         .game_dir     = MINECRAFT_PATH,
-        // .username     = account_info.username,
-        // .uuid         = account_info.uuid,
-        // .access_token = account_info.ygg_token,
-        .username = "sketched_test",
-        .uuid = "00000000-0000-0000-0000-000000000000"
+        .username     = acc->username,
+        .uuid         = acc->uuid,
+        .access_token = acc->ygg_token,
     };
 
     char **jvm_args  = build_jvm_args(json, &ctx);
     char **game_args = build_game_args(json, &ctx);
 
-    //system("rm -rf /tmp/tnt-mc-natives");
+    
     extract_wrapper(json);
 
     int jvm_count = 0, game_count = 0;
@@ -131,7 +133,7 @@ static void launchmc(int dry, char *version)
     char **java_args = malloc(sizeof(char *) * total);
     if (!java_args) {
         fprintf(stderr, "error: malloc failed\n");
-        free_launch_resources(classpath, jvm_args, game_args, asset_index, json, jsonbuf);
+        free_launch_resources(classpath, jvm_args, game_args, asset_index, json, accounts_json, jsonbuf);
         return;
     }
 
@@ -157,15 +159,18 @@ static void launchmc(int dry, char *version)
             printf("%s ", java_args[i]);
         printf("\n");
         free(java_args);
-        free_launch_resources(classpath, jvm_args, game_args, asset_index, json, jsonbuf);
+        free_launch_resources(classpath, jvm_args, game_args, asset_index, json, accounts_json, jsonbuf);
         return;
     }
 
+    // change pwd to MINECRAFT_PATH
+    chdir(MINECRAFT_PATH);
+    // big boy executor
     execvp(javacmd, java_args);
 
     perror("execvp failed");
     free(java_args);
-    free_launch_resources(classpath, jvm_args, game_args, asset_index, json, jsonbuf);
+    free_launch_resources(classpath, jvm_args, game_args, asset_index, json,accounts_json, jsonbuf);
 }
 
 int main(int argc, char *argv[])

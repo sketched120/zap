@@ -25,7 +25,10 @@ void launch_loader_handler(cJSON *child_json) {
            MINECRAFT_PATH "/versions/%s/%s.json", version, version);
 
   char *parent_buf = read_file(parent_json_path);
-  nullchk(parent_buf);
+  if (!parent_buf) {
+    fprintf(stderr, "Failed to find parent version JSON! Install the parent version before launching a Fabric instance for the first time.");
+    exit(1);
+  }
 
   cJSON *parent_json = cJSON_Parse(parent_buf);
   nullchk(parent_json);
