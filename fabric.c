@@ -22,7 +22,7 @@ void launch_loader_handler(cJSON *child_json) {
 
   char parent_json_path[256];
   snprintf(parent_json_path, sizeof(parent_json_path),
-           MINECRAFT_PATH "/versions/%s/%s.json", version, version);
+           "versions/%s/%s.json", version, version);
 
   char *parent_buf = read_file(parent_json_path);
   if (!parent_buf) {
@@ -89,9 +89,9 @@ void download_fabric_libraries(cJSON *json) {
     char url[512];
     snprintf(url, sizeof(url), "%s%s", mvn_url->valuestring, path);
 
-    size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+    size_t len = strlen(minecraft_path) + strlen(path) + 50;
     dests[start] = malloc(len);
-    snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
+    snprintf(dests[start], len, "libraries/%s", path);
     printf("name: %s -> path: %s\n", mvn_name->valuestring, path);
     urls[start] = strdup(url);
     start++;
@@ -181,7 +181,7 @@ void download_fabric_manifest(char *mc_version, char *loader_version) {
   char manifest_path[256];
   snprintf(
       manifest_path, sizeof(manifest_path),
-      MINECRAFT_PATH "/versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
+      "versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
       loader_version, mc_version, loader_version, mc_version);
 
   char url_path[256];

@@ -12,14 +12,14 @@
 
 void download_version_manifest() {
   download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json",
-                MINECRAFT_PATH "/version_manifest.json");
+                "version_manifest.json");
 }
 void list_available_versions(char *vertype) {
 
   
   download_version_manifest();
 
-  char *vm_buf = read_file(MINECRAFT_PATH "/version_manifest.json");
+  char *vm_buf = read_file("version_manifest.json");
   nullchk(vm_buf);
 
   cJSON *manifest_json = cJSON_Parse(vm_buf);
@@ -65,7 +65,7 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
   }
 
   char dest_path[256];
-  snprintf(dest_path, sizeof(dest_path), MINECRAFT_PATH "/versions/%s/%s.json",
+  snprintf(dest_path, sizeof(dest_path), "versions/%s/%s.json",
            id_c, id_c);
   download_file(version_url, dest_path);
 }
@@ -101,9 +101,9 @@ void download_libraries(cJSON *libraries) {
         char *path = path_j->valuestring;
         char *url = url_j->valuestring;
 
-        size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+        size_t len = strlen(minecraft_path) + strlen(path) + 50;
         dests[start] = malloc(len);
-        snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
+        snprintf(dests[start], len, "libraries/%s", path);
         urls[start] = url;
         start++;
       }
@@ -122,9 +122,9 @@ void download_libraries(cJSON *libraries) {
     char *path = path_j->valuestring;
     char *url = url_j->valuestring;
 
-    size_t len = strlen(MINECRAFT_PATH) + strlen(path) + 50;
+    size_t len = strlen(minecraft_path) + strlen(path) + 50;
     dests[start] = malloc(len);
-    snprintf(dests[start], len, MINECRAFT_PATH "/libraries/%s", path);
+    snprintf(dests[start], len, "libraries/%s", path);
 
     urls[start] = url;
     start++;
@@ -151,7 +151,7 @@ void download_client(cJSON *version_json) {
 
   nullchk(id);
   nullchk(cl_url);
-  snprintf(cl_dest, sizeof(cl_dest), MINECRAFT_PATH "/versions/%s/%s.jar",
+  snprintf(cl_dest, sizeof(cl_dest), "versions/%s/%s.jar",
            id->valuestring, id->valuestring);
   download_file(cl_url->valuestring, cl_dest);
 }
@@ -168,7 +168,7 @@ void download_assets(cJSON *version_json) {
 
   char dest_path[256];
   snprintf(dest_path, sizeof(dest_path),
-           MINECRAFT_PATH "/assets/indexes/%s.json", index_id);
+           "assets/indexes/%s.json", index_id);
 
   int status = download_file(index_url->valuestring, dest_path);
   if (status == 1) {
@@ -205,7 +205,7 @@ void download_assets(cJSON *version_json) {
     snprintf(url, sizeof(url), "%s/%.2s/%s", res_url, hash->valuestring,
              hash->valuestring);
     snprintf(dest_path, sizeof(dest_path),
-             MINECRAFT_PATH "/assets/objects/%.2s/%s", hash->valuestring,
+             "assets/objects/%.2s/%s", hash->valuestring,
              hash->valuestring);
 
     urls[start] = strdup(url);
@@ -233,7 +233,7 @@ void download_version(char *req_v) {
   printf("Downloading version manifest...\n");
   download_version_manifest();
 
-  char *v_man = read_file(MINECRAFT_PATH "/version_manifest.json");
+  char *v_man = read_file("version_manifest.json");
   nullchk(v_man);
 
   cJSON *v_json = cJSON_Parse(v_man);
@@ -246,7 +246,7 @@ void download_version(char *req_v) {
   free(v_man);
 
   char vj_path[256];
-  snprintf(vj_path, sizeof(vj_path), MINECRAFT_PATH "/versions/%s/%s.json",
+  snprintf(vj_path, sizeof(vj_path), "versions/%s/%s.json",
            req_v, req_v);
 
   char *vj_buf = read_file(vj_path);

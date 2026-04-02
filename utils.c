@@ -96,7 +96,7 @@ char *get_asset_index(cJSON *json) {
 }
 
 void list_installed(void) {
-    DIR *d = opendir(MINECRAFT_PATH "/versions");
+    DIR *d = opendir("versions");
 
     nullchk(d);
 
@@ -139,7 +139,7 @@ char *build_classpath(cJSON *version_json) {
             char *jarpath = get_jar_path(name->valuestring);
             if (!jarpath) continue;
             offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                       MINECRAFT_PATH "/libraries/%s:", jarpath);
+                                       "libraries/%s:", jarpath);
             free(jarpath);
             continue;
         }
@@ -148,7 +148,7 @@ char *build_classpath(cJSON *version_json) {
         if (artifact) {
             cJSON *path = cJSON_GetObjectItem(artifact, "path");
             offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                       MINECRAFT_PATH "/libraries/%s:", path->valuestring);
+                                       "libraries/%s:", path->valuestring);
         }
 
         cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
@@ -157,7 +157,7 @@ char *build_classpath(cJSON *version_json) {
             if (natives_linux) {
                 cJSON *path = cJSON_GetObjectItem(natives_linux, "path");
                 offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                           MINECRAFT_PATH "/libraries/%s:", path->valuestring);
+                                           "libraries/%s:", path->valuestring);
             }
         }
     }
@@ -170,7 +170,7 @@ char *build_classpath(cJSON *version_json) {
     }
 
     snprintf(classpath + offset, buf_size - offset,
-             MINECRAFT_PATH "/versions/%s/%s.jar",
+             "versions/%s/%s.jar",
              id->valuestring, id->valuestring);
 
     return classpath;
@@ -181,4 +181,24 @@ bool file_exists(char *file) {
     if (stat(file, &f_inf) == 0) {
         return true;
     } else return false;
+}
+
+void mkdirs(const char *path) {
+    char tmp[1024];
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    
+    // Find the last slash to separate the folder from the filename
+    char *last_slash = strrchr(tmp, '/');
+    if (!last_slash) return; // No slashes, nothing to create
+
+    for (char *p = tmp + 1; p < last_slash; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            mkdir(tmp, 0755);
+            *p = '/';
+        }
+    }
+    // Create the final parent directory
+    *last_slash = '\0';
+    mkdir(tmp, 0755);
 }

@@ -28,6 +28,7 @@ void extract_natives(char *jar, char *dest) {
 
         char dest_path[512];
         snprintf(dest_path, sizeof(dest_path), "%s/%s", dest, filename);
+        mkdirs(dest_path);
 
         if (file_exists(dest_path)) continue;
 
@@ -58,7 +59,7 @@ void extract_wrapper(cJSON *json) {
     cJSON *lib;
 
     char natives_dir[256];
-    snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH "/natives/%s", id->valuestring);
+    snprintf(natives_dir, sizeof(natives_dir), "natives/%s", id->valuestring);
     mkdir(natives_dir, 0755);
 
     cJSON_ArrayForEach(lib, libraries) {
@@ -76,7 +77,7 @@ void extract_wrapper(cJSON *json) {
             if (natives_linux) {
                 cJSON *path = cJSON_GetObjectItem(natives_linux, "path");
                 if (path) {
-                    snprintf(jar, sizeof(jar), MINECRAFT_PATH "/libraries/%s", path->valuestring);
+                    snprintf(jar, sizeof(jar), "libraries/%s", path->valuestring);
                     found = true;
                 }
             }
@@ -89,7 +90,7 @@ void extract_wrapper(cJSON *json) {
             if (!artifact) continue;
             cJSON *path = cJSON_GetObjectItem(artifact, "path");
             if (!path) continue;
-            snprintf(jar, sizeof(jar), MINECRAFT_PATH "/libraries/%s", path->valuestring);
+            snprintf(jar, sizeof(jar), "libraries/%s", path->valuestring);
             found = true;
         }
 

@@ -8,25 +8,6 @@
 
 #include "include/utils.h"
 
-void mkdirs(const char *path) {
-    char tmp[1024];
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    
-    // Find the last slash to separate the folder from the filename
-    char *last_slash = strrchr(tmp, '/');
-    if (!last_slash) return; // No slashes, nothing to create
-
-    for (char *p = tmp + 1; p < last_slash; p++) {
-        if (*p == '/') {
-            *p = '\0';
-            mkdir(tmp, 0755);
-            *p = '/';
-        }
-    }
-    // Create the final parent directory
-    *last_slash = '\0';
-    mkdir(tmp, 0755);
-}
 
 static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *ud) {
     return fwrite(ptr, size, nmemb, (FILE *)ud);
@@ -99,7 +80,7 @@ int download_file(const char *url, char *dest) {
     curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION,  write_cb);
     curl_easy_setopt(easy, CURLOPT_WRITEDATA,      fp);
     curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_perform(easy);  // blocking, single file
+    curl_easy_perform(easy);  
     curl_easy_cleanup(easy);
     fclose(fp);
 

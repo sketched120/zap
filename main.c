@@ -1,10 +1,13 @@
 
+#define _GNU_SOURCE
+
 #include <cjson/cJSON.h>
 #include <curl/curl.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "include/auth.h"
 #include "include/fabric.h"
@@ -13,18 +16,21 @@
 #include "include/utils.h"
 #include "include/version.h"
 
+char *minecraft_path = NULL;
+
 static void print_help(const char *prog) {
-  printf("usage: %s [options]\n\n", prog);
-  printf("options:\n");
-  printf("  -l, --launch <instance>         launch a specific instance\n");
-  printf("  -L, --list <type>               list available instances "
-         "('snapshot' or 'release')\n");
-  printf("  -F, --fabric <version>          list available fabric loaders for "
-         "a specified version\n");
-  printf("  -D, --download <version>        download the given version\n");
-  printf("  -d, --dry <instance>            dry run (print java cmdline)\n");
-  printf("  -i, --installed                 list installed instances\n");
-  printf("  -h, --help                      print this help and exit\n");
+  printf("usage: %s [options]\n\n"
+         "options:\n"
+         "  -l <version>    launch a version\n"
+         "  -D <version>    dry run (print java cmdline)\n"
+         "  -L              list available versions\n"
+         "  -d              download a version (requires -v and -t)\n"
+         "  -v <version>    version string (e.g. 1.21.1)\n"
+         "  -t <type>       version type (release, snapshot, fabric)\n"
+         "  -f <version>    fabric loader version (optional, defaults to latest)\n"
+         "  -p <path>       minecraft path (default: ~/.minecraft)\n"
+         "  -i              list installed versions\n"
+         "  -h              print this help and exit\n", prog);
 }
 
 static void free_launch_resources(char *classpath, char **jvm_args,
@@ -50,7 +56,7 @@ static void free_launch_resources(char *classpath, char **jvm_args,
 
 static void launchmc(int dry, char *version) {
   char jsonpath[256];
-  snprintf(jsonpath, sizeof(jsonpath), MINECRAFT_PATH "/versions/%s/%s.json",
+  snprintf(jsonpath, sizeof(jsonpath), "versions/%s/%s.json",
            version, version);
 
   char *jsonbuf = read_file(jsonpath);
@@ -92,7 +98,7 @@ static void launchmc(int dry, char *version) {
   char *asset_index = get_asset_index(json);
   char *classpath = build_classpath(json);
 
-  char *accounts_buf = read_file(MINECRAFT_PATH "/accounts.json");
+  char *accounts_buf = read_file("accounts.json");
   cJSON *accounts_json = cJSON_Parse(accounts_buf);
   if (!accounts_buf) {
     fprintf(stderr,
@@ -107,15 +113,15 @@ static void launchmc(int dry, char *version) {
 
   Account *acc = get_account_details(accounts_json);
   char natives_dir[256];
-  snprintf(natives_dir, sizeof(natives_dir), MINECRAFT_PATH "/natives/%s",
+  snprintf(natives_dir, sizeof(natives_dir), "natives/%s",
            version);
   LaunchContext ctx = {
       .version = version,
       .natives_dir = natives_dir,
       .classpath = classpath,
-      .assets_dir = MINECRAFT_PATH "/assets/",
+      .assets_dir = "assets/",
       .asset_index = asset_index,
-      .game_dir = MINECRAFT_PATH,
+      .game_dir = minecraft_path,
       .username = acc->username,
       .uuid = acc->uuid,
       .access_token = acc->ygg_token,
@@ -171,8 +177,7 @@ static void launchmc(int dry, char *version) {
     return;
   }
 
-  // change pwd to MINECRAFT_PATH
-  chdir(MINECRAFT_PATH);
+  
   // big boy executor
   execvp(javacmd, java_args);
 
@@ -196,7 +201,7 @@ int main(int argc, char *argv[]) {
 
   opterr = 0;
 
-  while ((opt = getopt(argc, argv, "l:D:L:dv:t:f:ih")) != -1) {
+  while ((opt = getopt(argc, argv, "l:D:L:dv:t:f:p:ih")) != -1) {
 
     switch (opt) {
     case 'l':
@@ -214,6 +219,9 @@ int main(int argc, char *argv[]) {
     case 'd':
       download = 1;
       break;
+    case 'p':
+        minecraft_path = optarg;
+        break;
     case 't':
       type = optarg;
       break;
@@ -238,6 +246,12 @@ int main(int argc, char *argv[]) {
       return 1;
     }
   }
+  if (!minecraft_path) {
+    asprintf(&minecraft_path, "%s/.minecraft", getenv("HOME"));
+  }
+
+  mkdir(minecraft_path, 0755);
+  chdir(minecraft_path);
 
   if (optind < argc) {
     fprintf(stderr, "Error: Unexpected argument '%s'\n", argv[optind]);
@@ -245,6 +259,8 @@ int main(int argc, char *argv[]) {
     curl_global_cleanup();
     return 1;
   }
+
+  
 
   if (instance) {
     launchmc(0, instance);
@@ -262,6 +278,8 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+  
+
   if (download == 1) {
     if (version) {
 
@@ -277,7 +295,7 @@ int main(int argc, char *argv[]) {
 
       } else if (streq(type, "fabric")) {
 
-        int alloced;
+        int alloced = 0;
         if (!fabric_version) {
           fabric_version = get_latest_fabric_loader(version);
           printf("No loader version specified, choosing latest Fabric loader version.");
@@ -286,13 +304,14 @@ int main(int argc, char *argv[]) {
         }
 
         download_fabric_manifest(version, fabric_version);
-        if (alloced == 1) free(fabric_version);
+        
 
         printf("\nDownloading child version...\n");
         download_version(version);
 
         printf("\nDownloaded Fabric loader %s for %s successfully.\n"
         "Launch with \"-l fabric-loader-%s-%s\".", fabric_version, version, fabric_version, version);
+        if (alloced == 1) free(fabric_version);
         goto done;
       } else {
         fprintf(stderr,
@@ -302,6 +321,7 @@ int main(int argc, char *argv[]) {
       }
 
     done:
+      free(minecraft_path);
       curl_global_cleanup();
       return 0;
     }
@@ -309,11 +329,13 @@ int main(int argc, char *argv[]) {
 
   if (fabric_version) {
     list_fabric_versions(fabric_version);
+    free(minecraft_path);
     curl_global_cleanup();
     return 0;
   }
 
   fprintf(stderr, "Error: No mode specified, try -h\n");
+  free(minecraft_path);
   curl_global_cleanup();
   return 1;
 }
