@@ -7,6 +7,10 @@
 
 #include "include/utils.h"
 
+int streq(const char *a, const char *b) {
+    return strcmp(a, b) == 0;
+}
+
 bool is_allowed_on_linux(cJSON *library) {
     cJSON *rules = cJSON_GetObjectItem(library, "rules");
     if (!rules) return true;

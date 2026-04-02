@@ -9,7 +9,7 @@
 #include "include/version.h"
 
 #ifndef FABRIC_MANIFEST_LINK
-#define FABRIC_MANIFEST_LINK "https://meta.fabricmc.net/v2/versions/loader/"
+#define FABRIC_MANIFEST_LINK "https://meta.fabricmc.net/v2/versions/loader"
 #endif
 
 void launch_loader_handler(cJSON *child_json) {
@@ -106,46 +106,20 @@ void download_fabric_libraries(cJSON *json) {
   free(urls);
   free(dests);
 
-  /*cJSON *lib;
-  cJSON_ArrayForEach(lib, libraries) {
-      cJSON *name = cJSON_GetObjectItem(lib, "name");
-      cJSON *url  = cJSON_GetObjectItem(lib, "url");
-
-      if (!url || !url->valuestring) continue;
-
-      char *libname = get_jar_path(name->valuestring);
-      if (!libname) continue;
-
-      size_t len = strlen(url->valuestring);
-      if (len > 0 && url->valuestring[len - 1] == '/')
-          url->valuestring[len - 1] = '\0';
-
-      char libpath[512];
-      char urlstring[512];
-      snprintf(urlstring, sizeof(urlstring), "%s/%s", url->valuestring,
-  libname); snprintf(libpath,   sizeof(libpath),   MINECRAFT_PATH
-  "/libraries/%s", libname);
-
-      if (file_exists(libpath)) {
-          printf("downloading %s from %s\n", name->valuestring, urlstring);
-          download_file(urlstring, libpath);
-      }
-      free(libname);
-  }*/
 }
 
-void list_fabric_versions(char *req_mc_version) {
+void list_fabric_versions(char *mc_version) {
   char fabric_url[128];
   char tmp_path[64];
 
-  snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "%s",
-           req_mc_version);
+  snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "/%s",
+           mc_version);
   snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
-           req_mc_version);
+           mc_version);
 
   int status = download_file(fabric_url, tmp_path);
   if (status == 1) {
-    fprintf(stderr, "failed to download manifest, does that version exist?\n");
+    fprintf(stderr, "Failed to download manifest, does that version exist?\n");
     return;
   }
 
@@ -162,20 +136,20 @@ void list_fabric_versions(char *req_mc_version) {
     cJSON *item = cJSON_GetArrayItem(json, i);
     cJSON *loader = cJSON_GetObjectItem(item, "loader");
     cJSON *version = cJSON_GetObjectItem(loader, "version");
-    printf("%-30s %s\n", version->valuestring, req_mc_version);
+    printf("%-30s %s\n", version->valuestring, mc_version);
   }
   cJSON_Delete(json);
   free(temp_buf);
 }
 
-char *get_latest_fabric_loader(char *req_mc_version) {
+char *get_latest_fabric_loader(char *mc_version) {
   char fabric_url[128];
   char tmp_path[64];
 
   snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "%s",
-           req_mc_version);
+           mc_version);
   snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
-           req_mc_version);
+           mc_version);
 
   int status = download_file(fabric_url, tmp_path);
   if (status == 1) {
@@ -197,23 +171,23 @@ char *get_latest_fabric_loader(char *req_mc_version) {
   char *out = strdup(version->valuestring);
   cJSON_Delete(json);
   free(temp_buf);
-  return out; // caller must free()
+  return out; 
 }
 
-void download_fabric_manifest(char *req_mc_version, char *req_loader_version) {
-  printf("downloading fabric loader %s manifest for %s...\n",
-         req_loader_version, req_mc_version);
+void download_fabric_manifest(char *mc_version, char *loader_version) {
+  printf("Downloading Fabric loader %s manifest for %s...\n",
+         loader_version, mc_version);
 
   char manifest_path[256];
   snprintf(
       manifest_path, sizeof(manifest_path),
       MINECRAFT_PATH "/versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
-      req_loader_version, req_mc_version, req_loader_version, req_mc_version);
+      loader_version, mc_version, loader_version, mc_version);
 
   char url_path[256];
   snprintf(url_path, sizeof(url_path),
-           "https://meta.fabricmc.net/v2/versions/loader/%s/%s/profile/json",
-           req_mc_version, req_loader_version);
+           "%s/%s/%s/profile/json",
+           FABRIC_MANIFEST_LINK, mc_version, loader_version);
 
   download_file(url_path, manifest_path);
 }

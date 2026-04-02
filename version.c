@@ -16,6 +16,7 @@ void download_version_manifest() {
 }
 void list_available_versions(char *vertype) {
 
+  
   download_version_manifest();
 
   char *vm_buf = read_file(MINECRAFT_PATH "/version_manifest.json");
@@ -213,7 +214,7 @@ void download_assets(cJSON *version_json) {
 
     object = object->next;
   }
-  printf("beginning download...\n");
+  printf("Beginning download...\n");
   download_files(urls, dests, start);
 
   for (int i = 0; i < a_count; i++) {
@@ -257,18 +258,20 @@ void download_version(char *req_v) {
   cJSON *libraries = cJSON_GetObjectItem(vj_json, "libraries");
   nullchk(libraries);
   
-  printf("downloading libraries...\n");
+  printf("Downloading libraries...\n");
   download_libraries(libraries);
 
-  printf("downloading client...\n");
+  printf("Downloading client...\n");
   download_client(vj_json);
 
-  printf("downloading assets...\n");
+  printf("Downloading assets...\n");
   download_assets(vj_json);
 
   printf("%s successfully installed.", req_v);
-  printf("launch with -l %s\n", req_v);
+  printf("Launch with -l %s\n", req_v);
 
   cJSON_Delete(vj_json);
   free(vj_buf);
+
+  return;
 }
