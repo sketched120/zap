@@ -98,7 +98,8 @@ char *get_asset_index(cJSON *json) {
 void list_installed(void) {
     DIR *d = opendir("versions");
 
-    nullchk(d);
+    nullchk(d); /* debug */
+    
 
     struct dirent *entry;
     while ((entry = readdir(d)) != NULL) {

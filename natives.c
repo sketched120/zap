@@ -6,7 +6,7 @@
 #include "include/utils.h"
 #include <sys/stat.h>
 
-void extract_natives(char *jar, char *dest) {
+static void extract_natives(char *jar, char *dest) {
     zip_t *zip = zip_open(jar, 0, NULL);
     if (!zip) {
         printf("Failed to open jar %s.\n", jar);

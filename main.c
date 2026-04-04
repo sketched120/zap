@@ -36,8 +36,7 @@ int main(int argc, char *argv[]) {
 
   char *instance = NULL;
   char *dry_arg = NULL;
-  int download = 0;
-  int list = 0;
+  int download = 0, list = 0, listi = 0;
   char *type = NULL;
   char *version = NULL;
   char *fabric_version = NULL;
@@ -73,9 +72,8 @@ int main(int argc, char *argv[]) {
       fabric_version = optarg;
       break;
     case 'i':
-      list_installed();
-      curl_global_cleanup();
-      return 0;
+      listi = 1;
+      break;
     case 'h':
       print_help(argv[0]);
       curl_global_cleanup();
@@ -97,6 +95,11 @@ int main(int argc, char *argv[]) {
   mkdir(minecraft_path, 0755);
   chdir(minecraft_path);
 
+  if (listi == 1) {
+    list_installed();
+    curl_global_cleanup();
+    return 0;
+  }
   if (optind < argc) {
     fprintf(stderr, "Error: Unexpected argument '%s'\n", argv[optind]);
     fprintf(stderr, "Run with -h for usage.\n");

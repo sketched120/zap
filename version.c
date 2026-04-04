@@ -10,7 +10,7 @@
 #include "include/download.h"
 #include "include/utils.h"
 
-void download_version_manifest() {
+static void download_version_manifest() {
   download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json",
                 "version_manifest.json");
 }
@@ -41,7 +41,7 @@ void list_available_versions(char *vertype) {
   free(vm_buf);
 }
 
-void download_version_json(cJSON *manifest_json, char *id_c) {
+static void download_version_json(cJSON *manifest_json, char *id_c) {
 
   // okay so we get the json, iterate through the array and strcmp the id,
   // if it matches, we break out of the loop
@@ -70,7 +70,7 @@ void download_version_json(cJSON *manifest_json, char *id_c) {
   download_file(version_url, dest_path);
 }
 
-void download_libraries(cJSON *libraries) {
+static void download_libraries(cJSON *libraries) {
   cJSON *library;
   int start = 0;
   size_t libcount = cJSON_GetArraySize(libraries);
@@ -138,7 +138,7 @@ void download_libraries(cJSON *libraries) {
   free(dests);
 }
 
-void download_client(cJSON *version_json) {
+static void download_client(cJSON *version_json) {
 
   nullchk(version_json);
   cJSON *id = cJSON_GetObjectItem(version_json, "id");
@@ -156,7 +156,7 @@ void download_client(cJSON *version_json) {
   download_file(cl_url->valuestring, cl_dest);
 }
 
-void download_assets(cJSON *version_json) {
+static void download_assets(cJSON *version_json) {
 
   nullchk(version_json) 
   char *index_id = get_asset_index(version_json); // free this
