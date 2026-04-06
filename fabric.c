@@ -21,12 +21,14 @@ void launch_loader_handler(cJSON *child_json) {
   char *version = inherits_from->valuestring;
 
   char parent_json_path[256];
-  snprintf(parent_json_path, sizeof(parent_json_path),
-           "versions/%s/%s.json", version, version);
+  snprintf(parent_json_path, sizeof(parent_json_path), "versions/%s/%s.json",
+           version, version);
 
   char *parent_buf = read_file(parent_json_path);
   if (!parent_buf) {
-    fprintf(stderr, "Failed to find parent version JSON! Install the parent version before launching a Fabric instance for the first time.");
+    fprintf(stderr,
+            "Failed to find parent version JSON! Install the parent version "
+            "before launching a Fabric instance for the first time.");
     exit(1);
   }
 
@@ -84,7 +86,8 @@ void download_fabric_libraries(cJSON *json) {
     cJSON *mvn_url = cJSON_GetObjectItem(library, "url");
 
     char *path = get_jar_path(mvn_name->valuestring);
-    if (!path) puts("mvn path is NULL?");
+    if (!path)
+      puts("mvn path is NULL?");
 
     char url[512];
     snprintf(url, sizeof(url), "%s%s", mvn_url->valuestring, path);
@@ -105,10 +108,9 @@ void download_fabric_libraries(cJSON *json) {
   }
   free(urls);
   free(dests);
-
 }
 
-void list_fabric_versions(char *mc_version) {
+static void download_main_manifest(char *mc_version) {
   char fabric_url[128];
   char tmp_path[64];
 
@@ -118,10 +120,16 @@ void list_fabric_versions(char *mc_version) {
            mc_version);
 
   int status = download_file(fabric_url, tmp_path);
-  if (status == 1) {
-    fprintf(stderr, "Failed to download manifest, does that version exist?\n");
-    return;
-  }
+  printf("Downloaded %s to %s", fabric_url, tmp_path); /*debug*/
+  
+}
+void list_fabric_versions(char *mc_version) {
+
+  download_main_manifest(mc_version);
+  char tmp_path[64];
+
+  snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
+           mc_version);
 
   char *temp_buf = read_file(tmp_path);
   cJSON *json = cJSON_Parse(temp_buf);
@@ -142,20 +150,12 @@ void list_fabric_versions(char *mc_version) {
   free(temp_buf);
 }
 
-char *get_latest_fabric_loader(char *mc_version) {
-  char fabric_url[128];
+char *get_latest_loader(char *mc_version) {
+  download_main_manifest(mc_version);
   char tmp_path[64];
 
-  snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "%s",
-           mc_version);
   snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
            mc_version);
-
-  int status = download_file(fabric_url, tmp_path);
-  if (status == 1) {
-    fprintf(stderr, "failed to download manifest\n");
-    return NULL;
-  }
 
   char *temp_buf = read_file(tmp_path);
   cJSON *json = cJSON_Parse(temp_buf);
@@ -171,22 +171,20 @@ char *get_latest_fabric_loader(char *mc_version) {
   char *out = strdup(version->valuestring);
   cJSON_Delete(json);
   free(temp_buf);
-  return out; 
+  return out;
 }
 
 void download_fabric_manifest(char *mc_version, char *loader_version) {
-  printf("Downloading Fabric loader %s manifest for %s...\n",
-         loader_version, mc_version);
+  printf("Downloading Fabric loader %s manifest for %s...\n", loader_version,
+         mc_version);
 
   char manifest_path[256];
-  snprintf(
-      manifest_path, sizeof(manifest_path),
-      "versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
-      loader_version, mc_version, loader_version, mc_version);
+  snprintf(manifest_path, sizeof(manifest_path),
+           "versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
+           loader_version, mc_version, loader_version, mc_version);
 
   char url_path[256];
-  snprintf(url_path, sizeof(url_path),
-           "%s/%s/%s/profile/json",
+  snprintf(url_path, sizeof(url_path), "%s/%s/%s/profile/json",
            FABRIC_MANIFEST_LINK, mc_version, loader_version);
 
   download_file(url_path, manifest_path);

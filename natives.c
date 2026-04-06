@@ -1,10 +1,10 @@
 #include <cjson/cJSON.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <zip.h>
 
 #include "include/utils.h"
-#include <sys/stat.h>
 
 static void extract_natives(char *jar, char *dest) {
     zip_t *zip = zip_open(jar, 0, NULL);

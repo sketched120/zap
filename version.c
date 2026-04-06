@@ -70,7 +70,7 @@ static void download_version_json(cJSON *manifest_json, char *id_c) {
   download_file(version_url, dest_path);
 }
 
-static void download_libraries(cJSON *libraries) {
+void download_libraries(cJSON *libraries) {
   cJSON *library;
   int start = 0;
   size_t libcount = cJSON_GetArraySize(libraries);

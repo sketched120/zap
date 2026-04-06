@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
@@ -74,7 +75,12 @@ void launchmc(int dry, char *version) {
   char *asset_index = get_asset_index(json);
   char *classpath = build_classpath(json);
 
-  char *accounts_buf = read_file("accounts.json");
+  size_t acc_path_size = strlen(minecraft_path) + 16;
+  char accounts_path[acc_path_size];
+
+  snprintf(accounts_path, acc_path_size, "%s/accounts.json", minecraft_path);
+
+  char *accounts_buf = read_file(accounts_path);
   cJSON *accounts_json = cJSON_Parse(accounts_buf);
   if (!accounts_buf) {
     fprintf(stderr,
@@ -91,13 +97,17 @@ void launchmc(int dry, char *version) {
   char natives_dir[256];
   snprintf(natives_dir, sizeof(natives_dir), "natives/%s",
            version);
+
+  char game_dir[256];
+  getcwd(game_dir, sizeof(game_dir));
+
   LaunchContext ctx = {
       .version = version,
       .natives_dir = natives_dir,
       .classpath = classpath,
       .assets_dir = "assets/",
       .asset_index = asset_index,
-      .game_dir = minecraft_path,
+      .game_dir = game_dir,
       .username = acc->username,
       .uuid = acc->uuid,
       .access_token = acc->ygg_token,
