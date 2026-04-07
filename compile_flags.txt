@@ -1,1 +1,13 @@
 -std=c23
+-Wall
+-Wextra
+-Werror
+-pedantic
+-Wstrict-prototypes
+-Wmissing-prototypes
+-Wshadow
+-Wconversion
+-Wcast-align
+-Wformat=2
+-Wformat-security
+-Wno-unused-parameter

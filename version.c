@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "include/version.h"
 #include "include/download.h"
 #include "include/utils.h"
 
@@ -26,10 +27,10 @@ void list_available_versions(char *vertype) {
   nullchk(manifest_json);
 
   cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
-  size_t size = cJSON_GetArraySize(versions);
+  size_t size = (size_t)cJSON_GetArraySize(versions);
 
-  for (int i = size - 1; i >= 0; i--) {
-    cJSON *ver = cJSON_GetArrayItem(versions, i);
+  for (size_t i = size; i > 0; i--) {
+    cJSON *ver = cJSON_GetArrayItem(versions, (int)(i - 1));
     cJSON *id = cJSON_GetObjectItem(ver, "id");
     cJSON *type = cJSON_GetObjectItem(ver, "type");
     if (strcmp(vertype, type->valuestring) == 0) {
@@ -64,7 +65,7 @@ static void download_version_json(cJSON *manifest_json, char *id_c) {
     return;
   }
 
-  char dest_path[256];
+  char dest_path[BUF_MID];
   snprintf(dest_path, sizeof(dest_path), "versions/%s/%s.json",
            id_c, id_c);
   download_file(version_url, dest_path);
@@ -73,7 +74,7 @@ static void download_version_json(cJSON *manifest_json, char *id_c) {
 void download_libraries(cJSON *libraries) {
   cJSON *library;
   int start = 0;
-  size_t libcount = cJSON_GetArraySize(libraries);
+  size_t libcount = (size_t)cJSON_GetArraySize(libraries);
 
   char **urls = malloc(libcount * sizeof(char *));
   char **dests = malloc(libcount * sizeof(char *));
@@ -147,7 +148,7 @@ static void download_client(cJSON *version_json) {
   cJSON *client = cJSON_GetObjectItem(downloads, "client");
   cJSON *cl_url = cJSON_GetObjectItem(client, "url");
 
-  char cl_dest[256];
+  char cl_dest[BUF_MID];
 
   nullchk(id);
   nullchk(cl_url);
@@ -166,7 +167,7 @@ static void download_assets(cJSON *version_json) {
   nullchk(index_id);
   nullchk(index_url);
 
-  char dest_path[256];
+  char dest_path[BUF_MID];
   snprintf(dest_path, sizeof(dest_path),
            "assets/indexes/%s.json", index_id);
 
@@ -186,7 +187,7 @@ static void download_assets(cJSON *version_json) {
   cJSON *objects = cJSON_GetObjectItem(asset_index, "objects");
   
   int start = 0;
-  size_t a_count = cJSON_GetArraySize(objects);
+  size_t a_count = (size_t)cJSON_GetArraySize(objects);
 
   char **urls = malloc(a_count * (sizeof(char *)));
   char **dests = malloc(a_count * (sizeof(char *)));
@@ -200,7 +201,6 @@ static void download_assets(cJSON *version_json) {
     nullchk(hash);
 
     char url[256];
-    char dest_path[256];
 
     snprintf(url, sizeof(url), "%s/%.2s/%s", res_url, hash->valuestring,
              hash->valuestring);
@@ -217,7 +217,7 @@ static void download_assets(cJSON *version_json) {
   printf("Beginning download...\n");
   download_files(urls, dests, start);
 
-  for (int i = 0; i < a_count; i++) {
+  for (int i = 0; i < start; i++) {
     free(urls[i]);
     free(dests[i]);
   }
@@ -245,7 +245,7 @@ void download_version(char *req_v) {
   cJSON_Delete(v_json);
   free(v_man);
 
-  char vj_path[256];
+  char vj_path[BUF_MID];
   snprintf(vj_path, sizeof(vj_path), "versions/%s/%s.json",
            req_v, req_v);
 

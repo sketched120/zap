@@ -4,6 +4,10 @@
 #define nullchk(x) if (!(x)) { fprintf(stderr, "null check failed: %s at %s:%d\n", #x, __FILE__, __LINE__); return; }
 #define nullchkr(x, r) if (!(x)) { fprintf(stderr, "null check failed: %s at %s:%d\n", #x, __FILE__, __LINE__); return r; }
 
+#define BUF_SMALL 128
+#define BUF_MID 256
+#define BUF_LARGE 512
+
 #include <cjson/cJSON.h>
 #include <stdbool.h>
 

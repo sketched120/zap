@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <curl/curl.h>
 
+#include "include/download.h"
 #include "include/utils.h"
 
 

@@ -1,7 +1,9 @@
 #include <cjson/cJSON.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "include/download.h"
 #include "include/fabric.h"
@@ -20,7 +22,7 @@ void launch_loader_handler(cJSON *child_json) {
 
   char *version = inherits_from->valuestring;
 
-  char parent_json_path[256];
+  char parent_json_path[BUF_MID];
   snprintf(parent_json_path, sizeof(parent_json_path), "versions/%s/%s.json",
            version, version);
 
@@ -74,7 +76,7 @@ void download_fabric_libraries(cJSON *json) {
   cJSON *libraries = cJSON_GetObjectItem(json, "libraries");
 
   int start = 0;
-  size_t libcount = cJSON_GetArraySize(libraries);
+  size_t libcount = (size_t)cJSON_GetArraySize(libraries);
 
   char **urls = malloc(libcount * sizeof(char *));
   char **dests = malloc(libcount * sizeof(char *));
@@ -89,7 +91,7 @@ void download_fabric_libraries(cJSON *json) {
     if (!path)
       puts("mvn path is NULL?");
 
-    char url[512];
+    char url[BUF_LARGE];
     snprintf(url, sizeof(url), "%s%s", mvn_url->valuestring, path);
 
     size_t len = strlen(minecraft_path) + strlen(path) + 50;
@@ -111,7 +113,9 @@ void download_fabric_libraries(cJSON *json) {
 }
 
 static void download_main_manifest(char *mc_version) {
-  char fabric_url[128];
+
+
+  char fabric_url[BUF_MID];
   char tmp_path[64];
 
   snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "/%s",
@@ -119,8 +123,13 @@ static void download_main_manifest(char *mc_version) {
   snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
            mc_version);
 
+  if(file_exists(tmp_path)) unlink(tmp_path);
+
   int status = download_file(fabric_url, tmp_path);
-  printf("Downloaded %s to %s", fabric_url, tmp_path); /*debug*/
+  if (status == 1) {
+    fprintf(stderr, "Failed to download manifest! Please try again.\n");
+    unlink(tmp_path);
+  }
   
 }
 void list_fabric_versions(char *mc_version) {
@@ -178,7 +187,7 @@ void download_fabric_manifest(char *mc_version, char *loader_version) {
   printf("Downloading Fabric loader %s manifest for %s...\n", loader_version,
          mc_version);
 
-  char manifest_path[256];
+  char manifest_path[BUF_MID];
   snprintf(manifest_path, sizeof(manifest_path),
            "versions/fabric-loader-%s-%s/fabric-loader-%s-%s.json",
            loader_version, mc_version, loader_version, mc_version);

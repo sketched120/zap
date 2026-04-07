@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <zip.h>
+#include <zipconf.h>
 
+#include "include/natives.h"
 #include "include/utils.h"
 
 static void extract_natives(char *jar, char *dest) {
@@ -13,9 +15,13 @@ static void extract_natives(char *jar, char *dest) {
         return;
     }
     mkdir(dest, 0755);
-    int cnt = zip_get_num_entries(zip, 0);
-
-    for (int i = 0; i < cnt; i++) {
+    zip_int64_t cnt = zip_get_num_entries(zip, 0);
+    if (cnt < 0) {
+        zip_close(zip);
+        return;
+    }
+    
+    for (zip_uint64_t i = 0; i < (zip_uint64_t)cnt; i++) {
         const char *name = zip_get_name(zip, i, 0);
 
         if (!strstr(name, ".so")) continue;
@@ -44,7 +50,7 @@ static void extract_natives(char *jar, char *dest) {
         zip_int64_t bytes;
 
         while ((bytes = zip_fread(file, buf, sizeof(buf))) > 0)
-            fwrite(buf, 1, bytes, out);
+            fwrite(buf, 1, (size_t)bytes, out);
 
         fclose(out);
         zip_fclose(file);
@@ -58,7 +64,7 @@ void extract_wrapper(cJSON *json) {
     cJSON *libraries = cJSON_GetObjectItem(json, "libraries");
     cJSON *lib;
 
-    char natives_dir[256];
+    char natives_dir[BUF_MID];
     snprintf(natives_dir, sizeof(natives_dir), "natives/%s", id->valuestring);
     mkdir(natives_dir, 0755);
 

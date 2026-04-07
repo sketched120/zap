@@ -20,16 +20,16 @@ char *minecraft_path = NULL;
 static void print_help(const char *prog) {
   printf("usage: %s [options]\n\n"
          "options:\n"
-         "  -l <version>    launch a version\n"
-         "  -D <version>    dry run (print java cmdline)\n"
-         "  -L              list available versions\n"
-         "  -d              download a version (requires -v and -t)\n"
-         "  -v <version>    version string (e.g. 1.21.1)\n"
-         "  -t <type>       version type (release, snapshot, fabric)\n"
-         "  -f <version>    fabric loader version (optional, defaults to latest)\n"
-         "  -p <path>       minecraft path (default: ~/.minecraft)\n"
-         "  -i              list installed versions\n"
-         "  -h              print this help and exit\n", prog);
+         "  -l -v <version>          launch a version\n"
+         "  -D <version>             dry run (print java cmdline)\n"
+         "  -L                       list available versions\n"
+         "  -d -v <version> -t <type>  download a version\n"
+         "  -t <type>                release, snapshot, fabric\n"
+         "  -f <version>             fabric loader version (default: latest)\n"
+         "  -p <path>                minecraft path (default: ~/.minecraft)\n"
+         "  -n <instance>            use an instance directory\n"
+         "  -i                       list installed versions\n"
+         "  -h                       print this help and exit\n", prog);
 }
 
 int main(int argc, char *argv[]) {
@@ -114,11 +114,11 @@ int main(int argc, char *argv[]) {
   }
 
   if (zmm == 1) {
-    char path[256];
+    char path[BUF_MID];
     snprintf(path, sizeof(path), "%s/zmm", minecraft_path);
 
     printf("%s",path);
-    execl(path, NULL);
+    execl(path, path, NULL);
 
     perror("execlp");
     fprintf(stderr, "zmm is an experimental vibe-coded feature and not meant "
@@ -185,7 +185,6 @@ int main(int argc, char *argv[]) {
         if (!fabric_version) {
           fabric_version = get_latest_loader(version);
           printf("No loader version specified, choosing latest Fabric loader version.\n");
-          /*debug*/ printf("the version taken is %s\n", fabric_version);
           alloced = 1;
         }
 

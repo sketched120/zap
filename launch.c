@@ -10,6 +10,8 @@
 #include "include/jvm_args.h"
 #include "include/natives.h"
 
+#include "include/launch.h"
+
 static void free_launch_resources(char *classpath, char **jvm_args,
                                   char **game_args, char *asset_index,
                                   cJSON *json, cJSON *auth_json,
@@ -32,7 +34,7 @@ static void free_launch_resources(char *classpath, char **jvm_args,
 }
 
 void launchmc(int dry, char *version) {
-  char jsonpath[256];
+  char jsonpath[BUF_MID];
   snprintf(jsonpath, sizeof(jsonpath), "versions/%s/%s.json",
            version, version);
 
@@ -55,7 +57,6 @@ void launchmc(int dry, char *version) {
   }
 
   cJSON *main_class = cJSON_GetObjectItem(json, "mainClass");
-  cJSON *libraries = cJSON_GetObjectItem(json, "libraries");
   cJSON *java_version = cJSON_GetObjectItem(json, "javaVersion");
 
   if (!main_class || !main_class->valuestring) {
@@ -94,11 +95,11 @@ void launchmc(int dry, char *version) {
   free(accounts_buf);
 
   Account *acc = get_account_details(accounts_json);
-  char natives_dir[256];
+  char natives_dir[BUF_LARGE];
   snprintf(natives_dir, sizeof(natives_dir), "natives/%s",
            version);
 
-  char game_dir[256];
+  char game_dir[BUF_LARGE];
   getcwd(game_dir, sizeof(game_dir));
 
   LaunchContext ctx = {
@@ -125,7 +126,13 @@ void launchmc(int dry, char *version) {
     game_count++;
 
   int total = 2 + jvm_count + 1 + game_count + 1;
-  char **java_args = malloc(sizeof(char *) * total);
+  if (total <= 0) {
+    fprintf(stderr, "An error occured while constructing JVM arguments.");
+    fprintf(stderr, "@line 128");
+    return;
+  }
+  char **java_args = malloc(sizeof(char *) * (size_t)total);
+
   if (!java_args) {
     fprintf(stderr, "error: malloc failed\n");
     free_launch_resources(classpath, jvm_args, game_args, asset_index, json,
@@ -133,7 +140,7 @@ void launchmc(int dry, char *version) {
     return;
   }
 
-  char javacmd[128];
+  char javacmd[BUF_SMALL];
   if (java_version_required < 9)
     snprintf(javacmd, sizeof(javacmd),
              "/usr/lib/jvm/java-%d-openjdk/jre/bin/java",
