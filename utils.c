@@ -1,205 +1,273 @@
+#include <cjson/cJSON.h>
+#include <dirent.h>
+#include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <dirent.h>
-#include <cjson/cJSON.h>
+#include <time.h>
 
 #include "include/utils.h"
 
-int streq(const char *a, const char *b) {
-    return strcmp(a, b) == 0;
+int streq(const char *a, const char *b) { return strcmp(a, b) == 0; }
+
+void printlog(const char *lvl, const char *affected, const char *msg, ...) {
+  time_t time_cur = time(NULL);
+  struct tm *tm = localtime(&time_cur);
+
+  switch (lvl[0]) {
+  case 'E':
+    fprintf(stderr, "[%02d:%02d:%02d] [%s/ERROR] ", tm->tm_hour, tm->tm_min,
+            tm->tm_sec, affected);
+    break;
+  case 'W':
+    fprintf(stderr, "[%02d:%02d:%02d] [%s/WARN] ", tm->tm_hour, tm->tm_min,
+            tm->tm_sec, affected);
+    break;
+  default:
+    printf("[%02d:%02d:%02d] [%s/INFO] ", tm->tm_hour, tm->tm_min, tm->tm_sec,
+           affected);
+    break;
+  }
+  va_list args;
+  va_start(args, msg);
+  vprintf(msg, args);
+  va_end(args);
+
+  printf("\n");
 }
 
 bool is_allowed_on_linux(cJSON *library) {
-    cJSON *rules = cJSON_GetObjectItem(library, "rules");
-    if (!rules) return true;
+  cJSON *rules = cJSON_GetObjectItem(library, "rules");
+  if (!rules)
+    return true;
 
-    bool allowed = false;
-    cJSON *rule;
-    cJSON_ArrayForEach(rule, rules) {
-        cJSON *action = cJSON_GetObjectItem(rule, "action");
-        cJSON *os     = cJSON_GetObjectItem(rule, "os");
+  bool allowed = false;
+  cJSON *rule;
+  cJSON_ArrayForEach(rule, rules) {
+    cJSON *action = cJSON_GetObjectItem(rule, "action");
+    cJSON *os = cJSON_GetObjectItem(rule, "os");
 
-        if (strcmp(action->valuestring, "allow") == 0) {
-            if (!os) {
-                allowed = true;
-            } else {
-                cJSON *name = cJSON_GetObjectItem(os, "name");
-                if (name && strcmp(name->valuestring, "linux") == 0)
-                    allowed = true;
-            }
-        } else if (strcmp(action->valuestring, "disallow") == 0) {
-            if (os) {
-                cJSON *name = cJSON_GetObjectItem(os, "name");
-                if (name && strcmp(name->valuestring, "linux") == 0)
-                    allowed = false;
-            }
-        }
+    if (strcmp(action->valuestring, "allow") == 0) {
+      if (!os) {
+        allowed = true;
+      } else {
+        cJSON *name = cJSON_GetObjectItem(os, "name");
+        if (name && strcmp(name->valuestring, "linux") == 0)
+          allowed = true;
+      }
+    } else if (strcmp(action->valuestring, "disallow") == 0) {
+      if (os) {
+        cJSON *name = cJSON_GetObjectItem(os, "name");
+        if (name && strcmp(name->valuestring, "linux") == 0)
+          allowed = false;
+      }
     }
-    return allowed;
+  }
+  return allowed;
 }
 
 char *read_file(char *path) {
-    FILE *file = fopen(path, "rb");
-    if (!file) {
-        fprintf(stderr, "Failed to read file: %s\n", path);
-        return NULL;
-    }
+  FILE *file = fopen(path, "rb");
+  if (!file) {
+    printlog("ERROR", __func__, "Failed to read file: %s\n",
+             strerror(errno));
+    return NULL;
+  }
 
-    fseek(file, 0, SEEK_END);
-    long bufsize = ftell(file);
-    if (bufsize < 0) { fclose(file); return NULL; }
-    rewind(file);
-
-    char *buffer = malloc((size_t)bufsize + 1);
-    if (!buffer) { fclose(file); return NULL; }
-    fread(buffer, 1, (size_t)bufsize, file);
-    buffer[bufsize] = '\0';
-
+  fseek(file, 0, SEEK_END);
+  long bufsize = ftell(file);
+  if (bufsize < 0) {
     fclose(file);
-    return buffer;
+    return NULL;
+  }
+  rewind(file);
+
+  char *buffer = malloc((size_t)bufsize + 1);
+  if (!buffer) {
+    fclose(file);
+    return NULL;
+  }
+  fread(buffer, 1, (size_t)bufsize, file);
+  buffer[bufsize] = '\0';
+
+  fclose(file);
+  return buffer;
 }
 
 char *get_jar_path(char *libname) {
-    char namecp[256];
-    snprintf(namecp, sizeof(namecp), "%s", libname);
+  char namecp[256];
+  snprintf(namecp, sizeof(namecp), "%s", libname);
 
-    char *group      = strtok(namecp, ":");
-    char *artifact   = strtok(NULL, ":");
-    char *version    = strtok(NULL, ":");
-    char *classifier = strtok(NULL, ":");
+  char *group = strtok(namecp, ":");
+  char *artifact = strtok(NULL, ":");
+  char *version = strtok(NULL, ":");
+  char *classifier = strtok(NULL, ":");
 
-    if (!group || !artifact || !version) return NULL;
+  if (!group || !artifact || !version)
+    return NULL;
 
-    for (int i = 0; group[i]; i++)
-        if (group[i] == '.') group[i] = '/';
+  for (int i = 0; group[i]; i++)
+    if (group[i] == '.')
+      group[i] = '/';
 
-    char *out = malloc(1024);
-    nullchkr(out, NULL);
+  char *out = malloc(1024);
+  if (!out) {
+    printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
+    return NULL;
+  }
 
-    if (classifier)
-        snprintf(out, 1024, "%s/%s/%s/%s-%s-%s.jar", group, artifact, version, artifact, version, classifier);
-    else
-        snprintf(out, 1024, "%s/%s/%s/%s-%s.jar", group, artifact, version, artifact, version);
+  if (classifier)
+    snprintf(out, 1024, "%s/%s/%s/%s-%s-%s.jar", group, artifact, version,
+             artifact, version, classifier);
+  else
+    snprintf(out, 1024, "%s/%s/%s/%s-%s.jar", group, artifact, version,
+             artifact, version);
 
-    return out;
+  return out;
 }
 
 char *get_asset_index(cJSON *json) {
-    cJSON *assetIndex = cJSON_GetObjectItem(json, "assetIndex");
-    cJSON *id         = cJSON_GetObjectItem(assetIndex, "id");
-    char *out = malloc(128);
-    nullchkr(out, NULL);
-    snprintf(out, 128, "%s", id->valuestring);
-    return out;
+  cJSON *assetIndex = cJSON_GetObjectItem(json, "assetIndex");
+  cJSON *id = cJSON_GetObjectItem(assetIndex, "id");
+  char *out = malloc(128);
+  if (!out) {
+    printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
+    return NULL;
+  }
+  snprintf(out, 128, "%s", id->valuestring);
+  return out;
 }
 
 void list_installed(void) {
-    DIR *d = opendir("versions");
+  DIR *d = opendir("versions");
 
-    nullchk(d); /* debug */
-    
+  if (!d) {
+    printlog("ERROR", __func__, "Failed to open directory: %s ",
+             strerror(errno));
+    return;
+  }
 
-    struct dirent *entry;
-    while ((entry = readdir(d)) != NULL) {
-        if (entry->d_name[0] == '.') continue;
-        printf("%s\n", entry->d_name);
-    }
-    closedir(d);
+  struct dirent *entry;
+  while ((entry = readdir(d)) != NULL) {
+    if (entry->d_name[0] == '.')
+      continue;
+    printf("%s\n", entry->d_name);
+  }
+  closedir(d);
 }
 
 char *build_classpath(cJSON *version_json) {
-    size_t buf_size = 131072;
-    char *classpath = malloc(buf_size);
-    nullchkr(classpath, NULL);
-    classpath[0] = '\0';
+  size_t buf_size = 131072;
+  char *classpath = malloc(buf_size);
+  if (!classpath) {
+    printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
+    return NULL;
+  }
+  classpath[0] = '\0';
 
-    cJSON *libraries     = cJSON_GetObjectItem(version_json, "libraries");
-    cJSON *inherits_from = cJSON_GetObjectItem(version_json, "inheritsFrom");
-    cJSON *id            = inherits_from ? inherits_from : cJSON_GetObjectItem(version_json, "id");
-    cJSON *lib;
-    size_t offset = 0;
+  cJSON *libraries = cJSON_GetObjectItem(version_json, "libraries");
+  cJSON *inherits_from = cJSON_GetObjectItem(version_json, "inheritsFrom");
+  cJSON *id =
+      inherits_from ? inherits_from : cJSON_GetObjectItem(version_json, "id");
+  cJSON *lib;
+  size_t offset = 0;
 
-    cJSON_ArrayForEach(lib, libraries) {
-        if (is_allowed_on_linux(lib) == false) continue;
+  cJSON_ArrayForEach(lib, libraries) {
+    if (is_allowed_on_linux(lib) == false)
+      continue;
 
-        if (offset + 1024 > buf_size) {
-            buf_size *= 2;
-            char *tmp = realloc(classpath, buf_size);
-            if (!tmp) { free(classpath); return NULL; }
-            classpath = tmp;
-        }
+    if (offset + 1024 > buf_size) {
+      buf_size *= 2;
+      char *tmp = realloc(classpath, buf_size);
+      if (!tmp) {
+        printlog("ERROR", __func__, "realloc failed: %s", strerror(errno));
 
-        cJSON *downloads = cJSON_GetObjectItem(lib, "downloads");
-        if (!downloads) {
-            cJSON *maven_url = cJSON_GetObjectItem(lib, "url");
-            if (!maven_url) continue;
-            cJSON *name = cJSON_GetObjectItem(lib, "name");
-            if (!name) continue;
-            char *jarpath = get_jar_path(name->valuestring);
-            if (!jarpath) continue;
-            offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                       "libraries/%s:", jarpath);
-            free(jarpath);
-            continue;
-        }
-
-        cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
-        if (artifact) {
-            cJSON *path = cJSON_GetObjectItem(artifact, "path");
-            offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                       "libraries/%s:", path->valuestring);
-        }
-
-        cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
-        if (classifiers) {
-            cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
-            if (natives_linux) {
-                cJSON *path = cJSON_GetObjectItem(natives_linux, "path");
-                offset += (size_t)snprintf(classpath + offset, buf_size - offset,
-                                           "libraries/%s:", path->valuestring);
-            }
-        }
+        free(classpath);
+        return NULL;
+      }
+      classpath = tmp;
     }
 
-    if (offset + 512 > buf_size) {
-        buf_size += 512;
-        char *tmp = realloc(classpath, buf_size);
-        if (!tmp) { free(classpath); return NULL; }
-        classpath = tmp;
+    cJSON *downloads = cJSON_GetObjectItem(lib, "downloads");
+    if (!downloads) {
+      cJSON *maven_url = cJSON_GetObjectItem(lib, "url");
+      if (!maven_url)
+        continue;
+      cJSON *name = cJSON_GetObjectItem(lib, "name");
+      if (!name)
+        continue;
+      char *jarpath = get_jar_path(name->valuestring);
+      if (!jarpath)
+        continue;
+      offset += (size_t)snprintf(classpath + offset, buf_size - offset,
+                                 "libraries/%s:", jarpath);
+      free(jarpath);
+      continue;
     }
 
-    snprintf(classpath + offset, buf_size - offset,
-             "versions/%s/%s.jar",
-             id->valuestring, id->valuestring);
+    cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
+    if (artifact) {
+      cJSON *path = cJSON_GetObjectItem(artifact, "path");
+      offset += (size_t)snprintf(classpath + offset, buf_size - offset,
+                                 "libraries/%s:", path->valuestring);
+    }
 
-    return classpath;
+    cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
+    if (classifiers) {
+      cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
+      if (natives_linux) {
+        cJSON *path = cJSON_GetObjectItem(natives_linux, "path");
+        offset += (size_t)snprintf(classpath + offset, buf_size - offset,
+                                   "libraries/%s:", path->valuestring);
+      }
+    }
+  }
+
+  if (offset + 512 > buf_size) {
+    buf_size += 512;
+    char *tmp = realloc(classpath, buf_size);
+    if (!tmp) {
+      printlog("ERROR", __func__, "realloc failed: %s", strerror(errno));
+      free(classpath);
+      return NULL;
+    }
+    classpath = tmp;
+  }
+
+  snprintf(classpath + offset, buf_size - offset, "versions/%s/%s.jar",
+           id->valuestring, id->valuestring);
+
+  return classpath;
 }
 
 bool file_exists(char *file) {
-    struct stat f_inf;
-    if (stat(file, &f_inf) == 0) {
-        return true;
-    } else return false;
+  struct stat f_inf;
+  if (stat(file, &f_inf) == 0) {
+    return true;
+  } else
+    return false;
 }
 
-void mkdirs(const char *path) {
-    char tmp[1024];
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    
-    // Find the last slash to separate the folder from the filename
-    char *last_slash = strrchr(tmp, '/');
-    if (!last_slash) return; // No slashes, nothing to create
+/* This function helps to create parent directories 
+   without creating the file as a directory. */
 
-    for (char *p = tmp + 1; p < last_slash; p++) {
-        if (*p == '/') {
-            *p = '\0';
-            mkdir(tmp, 0755);
-            *p = '/';
-        }
+   void mkdirs(const char *path) {
+  char tmp[1024];
+  snprintf(tmp, sizeof(tmp), "%s", path);
+
+  char *last_slash = strrchr(tmp, '/');
+  if (!last_slash)
+    return;
+
+  for (char *p = tmp + 1; p < last_slash; p++) {
+    if (*p == '/') {
+      *p = '\0';
+      mkdir(tmp, 0755);
+      *p = '/';
     }
-    // Create the final parent directory
-    *last_slash = '\0';
-    mkdir(tmp, 0755);
+  }
+  *last_slash = '\0';
+  mkdir(tmp, 0755);
 }

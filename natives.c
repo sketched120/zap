@@ -1,9 +1,9 @@
 #include <cjson/cJSON.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <zip.h>
-#include <zipconf.h>
 
 #include "include/natives.h"
 #include "include/utils.h"
@@ -11,7 +11,7 @@
 static void extract_natives(char *jar, char *dest) {
     zip_t *zip = zip_open(jar, 0, NULL);
     if (!zip) {
-        printf("Failed to open jar %s.\n", jar);
+        printlog("ERROR", __func__, "Failed to open native JAR %s.", jar);
         return;
     }
     mkdir(dest, 0755);
@@ -20,11 +20,12 @@ static void extract_natives(char *jar, char *dest) {
         zip_close(zip);
         return;
     }
-    
+
     for (zip_uint64_t i = 0; i < (zip_uint64_t)cnt; i++) {
         const char *name = zip_get_name(zip, i, 0);
 
-        if (!strstr(name, ".so")) continue;
+        const char *a = strchr(name, '.'); /* we do this to filter out .sha1 and .git files*/
+        if (!strstr(name, ".so") || !streq(a, ".so")) continue;
 
         const char *filename = strrchr(name, '/');
         if (filename)
@@ -38,13 +39,19 @@ static void extract_natives(char *jar, char *dest) {
 
         if (file_exists(dest_path)) continue;
 
-        printf("Extracting native: %s\n", name);
+        printlog("INFO", __func__ ,"Extracting native library: %s", name);
 
         zip_file_t *file = zip_fopen_index(zip, i, 0);
-        if (!file) { printf("zip_fopen_index failed\n"); continue; }
+        if (!file) { printlog("ERROR", __func__ ,
+            "zip_fopen_index failed: %s\n", zip_error_strerror(zip_get_error(zip)));
+            continue; 
+        }
 
         FILE *out = fopen(dest_path, "wb");
-        if (!out) { printf("fopen failed for %s\n", dest_path); continue; }
+        if (!out) { printlog("ERROR", __func__, "fopen failed for %s: %s", 
+            dest_path, strerror(errno));
+            continue;
+        }
 
         char buf[4096];
         zip_int64_t bytes;

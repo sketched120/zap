@@ -3,6 +3,7 @@
 #include <dirent.h>
 
 #include <cjson/cJSON.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,20 +12,28 @@
 #include "include/download.h"
 #include "include/utils.h"
 
-static void download_version_manifest() {
+static void download_version_manifest(void) {
   download_file("https://piston-meta.mojang.com/mc/game/version_manifest.json",
                 "version_manifest.json");
 }
-void list_available_versions(char *vertype) {
+int list_available_versions(char *vertype) {
 
-  
   download_version_manifest();
 
   char *vm_buf = read_file("version_manifest.json");
-  nullchk(vm_buf);
+  if (!vm_buf) {
+      printlog("ERROR", __func__, "Failed to READ version_manifest.json!");
+      return 1;
+  }
 
   cJSON *manifest_json = cJSON_Parse(vm_buf);
-  nullchk(manifest_json);
+  if (!manifest_json) {
+      printlog("ERROR", __func__, "Failed to PARSE version_manifest.json, is it corrupted?");
+      free(vm_buf);
+      return 1;
+  }
+
+  free(vm_buf);
 
   cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
   size_t size = (size_t)cJSON_GetArraySize(versions);
@@ -37,16 +46,16 @@ void list_available_versions(char *vertype) {
       printf("%-30s %s\n", id->valuestring, type->valuestring);
     }
   }
-
   cJSON_Delete(manifest_json);
-  free(vm_buf);
+  return 0;
 }
 
-static void download_version_json(cJSON *manifest_json, char *id_c) {
+static int download_version_json(cJSON *manifest_json, char *id_c) {
 
-  // okay so we get the json, iterate through the array and strcmp the id,
-  // if it matches, we break out of the loop
-  nullchk(manifest_json);
+  if (!manifest_json) {
+      printlog("ERROR", __func__, "Obtained NULL version manifest, aborting!");
+      return 1;
+  }
 
   cJSON *versions = cJSON_GetObjectItem(manifest_json, "versions");
   cJSON *ver;
@@ -61,23 +70,29 @@ static void download_version_json(cJSON *manifest_json, char *id_c) {
   }
 
   if (!version_url) {
-    fprintf(stderr, "No such version found.");
-    return;
+    printlog("ERROR", __func__, "Specified version was not found in manifest!");
+    return 1;
   }
 
   char dest_path[BUF_MID];
   snprintf(dest_path, sizeof(dest_path), "versions/%s/%s.json",
            id_c, id_c);
   download_file(version_url, dest_path);
+
+  return 0;
 }
 
-void download_libraries(cJSON *libraries) {
+int download_libraries(cJSON *libraries) {
   cJSON *library;
   int start = 0;
   size_t libcount = (size_t)cJSON_GetArraySize(libraries);
 
   char **urls = malloc(libcount * sizeof(char *));
   char **dests = malloc(libcount * sizeof(char *));
+  if (!urls || !dests) {
+      printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
+      return 1;
+  }
 
   cJSON_ArrayForEach(library, libraries) {
     if (is_allowed_on_linux(library) == false)
@@ -87,13 +102,12 @@ void download_libraries(cJSON *libraries) {
     if (!downloads)
       continue;
 
-    // old format classifiers
+    /* we do this for the sake of old versions which use the classifier system */
     cJSON *classifiers = cJSON_GetObjectItem(downloads, "classifiers");
     if (classifiers) {
       cJSON *natives_linux = cJSON_GetObjectItem(classifiers, "natives-linux");
 
       if (natives_linux) {
-
         cJSON *path_j = cJSON_GetObjectItem(natives_linux, "path");
         cJSON *url_j = cJSON_GetObjectItem(natives_linux, "url");
 
@@ -110,7 +124,7 @@ void download_libraries(cJSON *libraries) {
       }
     }
 
-    // artifact
+    /* the newer artifact system is handled here. */
     cJSON *artifact = cJSON_GetObjectItem(downloads, "artifact");
     if (!artifact)
       continue;
@@ -137,35 +151,60 @@ void download_libraries(cJSON *libraries) {
     free(dests[i]);
   free(urls);
   free(dests);
+
+  return 0;
 }
 
-static void download_client(cJSON *version_json) {
+static int download_client(cJSON *version_json) {
 
-  nullchk(version_json);
+  if(!version_json) {
+      printlog("ERROR", __func__, "Obtained NULL version JSON, aborting!");
+      return 1;
+  }
+
   cJSON *id = cJSON_GetObjectItem(version_json, "id");
-
   cJSON *downloads = cJSON_GetObjectItem(version_json, "downloads");
   cJSON *client = cJSON_GetObjectItem(downloads, "client");
   cJSON *cl_url = cJSON_GetObjectItem(client, "url");
 
   char cl_dest[BUF_MID];
 
-  nullchk(id);
-  nullchk(cl_url);
+  if (!id) {
+      printlog("ERROR", __func__, "Failed to obtain version ID from JSON,"
+        "Is it corrupted?");
+      return 1;
+  }
+  if (!cl_url) {
+      printlog("ERROR", __func__, "Failed to obtain client download URL from JSON,"
+        "Is it corrupted?");
+      return 1;
+  }
   snprintf(cl_dest, sizeof(cl_dest), "versions/%s/%s.jar",
            id->valuestring, id->valuestring);
   download_file(cl_url->valuestring, cl_dest);
+  return 0;
 }
 
-static void download_assets(cJSON *version_json) {
+static int download_assets(cJSON *version_json) {
 
-  nullchk(version_json) 
-  char *index_id = get_asset_index(version_json); // free this
+  if (!version_json) {
+      printlog("ERROR", __func__, "Obtained NULL version JSON, aborting!");
+      return 1;
+  } 
+
+  char *index_id = get_asset_index(version_json); 
   cJSON *index_details = cJSON_GetObjectItem(version_json, "assetIndex");
   cJSON *index_url = cJSON_GetObjectItem(index_details, "url");
 
-  nullchk(index_id);
-  nullchk(index_url);
+  if (!index_id) {
+    printlog("ERROR", __func__ ,"Failed to obtain asset index ID.");
+    return 1;
+  }
+  if (!index_details || !index_url) {
+    printlog("ERROR", __func__, "Failed to obtain information "
+    "about the asset index, is the JSON corrupted?");
+    return 1;
+  }
 
   char dest_path[BUF_MID];
   snprintf(dest_path, sizeof(dest_path),
@@ -173,16 +212,22 @@ static void download_assets(cJSON *version_json) {
 
   int status = download_file(index_url->valuestring, dest_path);
   if (status == 1) {
-    printf("Failed to download asset index.\n");
-    return;
+    printlog("ERROR", __func__, "Failed to download asset index!");
+    return 1;
   }
 
   free(index_id);
 
   char *index_buf = read_file(dest_path);
-
+  if (!index_buf) {
+      printlog("ERROR", __func__, "Failed to READ asset index!");
+      return 1;
+  }
   cJSON *asset_index = cJSON_Parse(index_buf);
-  nullchk(asset_index);
+  if (!asset_index) {
+      printlog("ERROR", __func__, "Failed to PARSE asset index, is it corrupted?");
+      return 1;
+  }
 
   cJSON *objects = cJSON_GetObjectItem(asset_index, "objects");
   
@@ -191,6 +236,10 @@ static void download_assets(cJSON *version_json) {
 
   char **urls = malloc(a_count * (sizeof(char *)));
   char **dests = malloc(a_count * (sizeof(char *)));
+  if (!urls || !dests) {
+      printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
+      return 1;
+  }
 
   char *res_url = "https://resources.download.minecraft.net";
 
@@ -198,7 +247,11 @@ static void download_assets(cJSON *version_json) {
 
   while (object) {
     cJSON *hash = cJSON_GetObjectItem(object, "hash");
-    nullchk(hash);
+    if (!object) {
+      printlog("ERROR", __func__, "Asset object doesn't have a valid hash,"
+      " is the index corrupted?");
+      return 1;
+    }
 
     char url[256];
 
@@ -214,7 +267,7 @@ static void download_assets(cJSON *version_json) {
 
     object = object->next;
   }
-  printf("Beginning download...\n");
+  
   download_files(urls, dests, start);
 
   for (int i = 0; i < start; i++) {
@@ -227,51 +280,92 @@ static void download_assets(cJSON *version_json) {
 
   cJSON_Delete(asset_index);
   free(index_buf);
+
+  return 0;
 }
 
-void download_version(char *req_v) {
-  printf("Downloading version manifest...\n");
+int download_version(char *req_v) {
+  printlog("INFO", __func__, "Downloading version manifest...");
   download_version_manifest();
 
-  char *v_man = read_file("version_manifest.json");
-  nullchk(v_man);
+  char *vm_buf = read_file("version_manifest.json");
+  if (!vm_buf) {
+      printlog("ERROR", __func__, "Failed to READ version_manifest.json!");
+      goto abort;
+  }
 
-  cJSON *v_json = cJSON_Parse(v_man);
-  nullchk(v_json);
+  cJSON *v_json = cJSON_Parse(vm_buf);
+  free(vm_buf);
 
-  printf("Downloading %s.json...\n", req_v);
-  download_version_json(v_json, req_v);
+  if (!v_json) {
+      printlog("ERROR", __func__, "Failed to PARSE version_manifest.json, "
+       "is it corrupted? ");
+      goto abort;
+  }
+
+  printlog("INFO", __func__, "Downloading %s.json...", req_v);
+  int st = download_version_json(v_json, req_v);
+
+  if (st) {
+    printlog("ERROR", __func__, "Failed to download %s.json!", req_v);
+    goto abort;
+  }
 
   cJSON_Delete(v_json);
-  free(v_man);
 
   char vj_path[BUF_MID];
   snprintf(vj_path, sizeof(vj_path), "versions/%s/%s.json",
            req_v, req_v);
 
   char *vj_buf = read_file(vj_path);
-  nullchk(vj_buf); 
+  if (!vj_buf) {
+      printlog("ERROR", __func__, "Failed to READ %s.json!", req_v);
+      goto abort;
+  }
 
   cJSON *vj_json = cJSON_Parse(vj_buf);
-  nullchk(vj_json);
+  if (!vj_json) {
+      printlog("ERROR", __func__, "Failed to PARSE %s.json, is it corrupted?", req_v);
+      free(vj_buf);
+      goto abort;
+  }
 
   cJSON *libraries = cJSON_GetObjectItem(vj_json, "libraries");
-  nullchk(libraries);
+  if (!libraries) {
+      printlog("ERROR", __func__, "Failed to obtain libraries from %s.json, is it corrupted?", req_v);
+      goto abort;
+  }
   
-  printf("Downloading libraries...\n");
-  download_libraries(libraries);
+  printlog("INFO", __func__,"Downloading libraries...");
+  st = download_libraries(libraries);
+  if (st) {
+    printlog("ERROR", __func__, "Failed to download libraries!");
+    goto abort;
+  }
 
-  printf("Downloading client...\n");
-  download_client(vj_json);
+  printlog("INFO", __func__,"Downloading client...");
+  st = download_client(vj_json);
+  if (st) {
+    printlog("ERROR", __func__, "Failed to download client!");
+    goto abort;
+  }
 
-  printf("Downloading assets...\n");
-  download_assets(vj_json);
+  printlog("INFO", __func__,"Downloading assets...");
+  st = download_assets(vj_json);
+  if (st) {
+    printlog("ERROR", __func__, "Failed to download assets!");
+    goto abort;
+  }
 
-  printf("%s successfully installed.", req_v);
-  printf("Launch with -l %s\n", req_v);
+  printlog("INFO", __func__,"%s successfully installed.", req_v);
+  printlog("INFO", __func__,"Launch with -l %s", req_v);
 
   cJSON_Delete(vj_json);
   free(vj_buf);
 
-  return;
+  return 0;
+
+  abort: 
+    printlog("INFO", __func__, "Aborting!");
+    return 1;
 }

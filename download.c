@@ -32,7 +32,7 @@ void download_files(char **urls, char **dests, int n) {
             if (!f) { next++; continue; }
 
             CURL *e = curl_easy_init();
-            printf("downloading: %s\n", urls[next]);
+            printlog("INFO", __func__,"Downloading: %s", urls[next]);
             curl_easy_setopt(e, CURLOPT_URL,            urls[next]);
             curl_easy_setopt(e, CURLOPT_WRITEFUNCTION,  write_cb);
             curl_easy_setopt(e, CURLOPT_WRITEDATA,      f);
@@ -56,9 +56,7 @@ void download_files(char **urls, char **dests, int n) {
             curl_easy_getinfo(e, CURLINFO_PRIVATE, &f);
             if (f) fclose(f);
 
-            if (msg->data.result != CURLE_OK) {
-                // optional: unlink(d[?]) if you track indices
-            }
+            
 
             curl_multi_remove_handle(m, e);
             curl_easy_cleanup(e);

@@ -1,4 +1,3 @@
-
 #define _GNU_SOURCE
 
 #include <cjson/cJSON.h>
@@ -18,7 +17,7 @@
 char *minecraft_path = NULL;
 
 static void print_help(const char *prog) {
-  printf("usage: %s [options]\n\n"
+  printlog("INFO", "launcher", "usage: %s [options]\n"
          "options:\n"
          "  -l -v <version>          launch a version\n"
          "  -D <version>             dry run (print java cmdline)\n"
@@ -29,10 +28,11 @@ static void print_help(const char *prog) {
          "  -p <path>                minecraft path (default: ~/.minecraft)\n"
          "  -n <instance>            use an instance directory\n"
          "  -i                       list installed versions\n"
-         "  -h                       print this help and exit\n", prog);
+         "  -h                       print this help and exit", prog);
 }
 
 int main(int argc, char *argv[]) {
+  printlog("INFO", "launcher", "zap 0.0.1" );
   curl_global_init(CURL_GLOBAL_ALL);
 
   char *version = NULL;
@@ -41,11 +41,12 @@ int main(int argc, char *argv[]) {
   char *type = NULL;
   char *instance = NULL;
   char *fabric_version = NULL;
+  float mem = 2;
   int opt;
 
   opterr = 0;
 
-  while ((opt = getopt(argc, argv, "lD:L:dv:t:f:p:in:zh")) != -1) {
+  while ((opt = getopt(argc, argv, "lD:L:dv:t:f:p:in:m:zh")) != -1) {
 
     switch (opt) {
     case 'l':
@@ -81,16 +82,19 @@ int main(int argc, char *argv[]) {
     case 'z':
       zmm = 1;
       break;
+    case 'm':
+      mem = strtof(optarg, NULL);
+      break;
     case 'h':
       print_help(argv[0]);
       curl_global_cleanup();
       return 0;
     case '?':
       if (optopt)
-        fprintf(stderr, "Error: Unknown option '%-c'\n", optopt);
+        printlog("ERROR", "launcher", "Unknown option '%-c'", optopt);
       else
-        fprintf(stderr, "Error: Unknown option '%s'\n", argv[optind - 1]);
-      fprintf(stderr, "Run with -h for usage.\n");
+        printlog("ERROR", "launcher","Unknown option '%s'", argv[optind - 1]);
+      printlog("ERROR", "launcher", "Run with -h for usage.");
       curl_global_cleanup();
       return 1;
     }
@@ -121,8 +125,8 @@ int main(int argc, char *argv[]) {
     execl(path, path, NULL);
 
     perror("execlp");
-    fprintf(stderr, "zmm is an experimental vibe-coded feature and not meant "
-    "to be used.\n");
+    printlog("ERROR", "launcher", "zmm is an experimental vibe-coded feature and not meant "
+    "to be used.");
     curl_global_cleanup();
     return 1;
   } 
@@ -133,28 +137,25 @@ int main(int argc, char *argv[]) {
     return 0;
   }
   if (optind < argc) {
-    fprintf(stderr, "Error: Unexpected argument '%s'\n", argv[optind]);
-    fprintf(stderr, "Run with -h for usage.\n");
+    printlog("ERROR","launcher","Error: Unexpected argument '%s'", argv[optind]);
+    printlog("ERROR", "launcher", "Run with -h for usage.");
     curl_global_cleanup();
     return 1;
   }
 
-  
-
   if (launch == 1) {
     if (version) {
-      launchmc(0, version);
+      launchmc(0, mem, version);
       curl_global_cleanup();
       return 0;
     } else {
-      fprintf(stderr, "Error: Please specify a version to launch.\n"
-              "Run with -h for usage.");
+      printlog("ERROR", "launcher", "Please specify a version to launch. Run with -h for usage.");
       curl_global_cleanup();
       return 1;
     }
   }
   if (dry_arg) {
-    launchmc(1, dry_arg);
+    launchmc(1, mem, dry_arg);
     curl_global_cleanup();
     return 0;
   }
@@ -164,13 +165,11 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-
   if (download == 1) {
     if (version) {
 
       if (!type) {
-        fprintf(stderr, "Please specify a version type!\n"
-                        "(Can be \"release\", \"snapshot\" or \"fabric\")");
+        printlog("ERROR", "launcher","Please specify a version type! (Can be \"release\", \"snapshot\" or \"fabric\")");
         goto done;
       }
 
@@ -184,24 +183,29 @@ int main(int argc, char *argv[]) {
 
         if (!fabric_version) {
           fabric_version = get_latest_loader(version);
-          printf("No loader version specified, choosing latest Fabric loader version.\n");
+          printlog("INFO", "launcher", "No loader version specified, choosing latest Fabric loader version.");
           alloced = 1;
+          printf("%s\n", fabric_version);
+          
         }
 
+        if (!fabric_version) return 1;
+
         download_fabric_manifest(version, fabric_version);
-        
+  
+        printlog("INFO", "launcher", "Downloading child version...");
+        int st = download_version(version);
 
-        printf("\nDownloading child version...\n");
-        download_version(version);
-
-        printf("\nDownloaded Fabric loader %s for %s successfully.\n"
-        "Launch with \"-l fabric-loader-%s-%s\".", fabric_version, version, fabric_version, version);
+        if (st) {
+          printlog("ERROR", __func__, "Failed to download child version!");
+          goto done;
+        } 
+        printlog("INFO", "launcher", "Downloaded Fabric loader %s for %s successfully."
+        " Launch with \"-l fabric-loader-%s-%s\".", fabric_version, version, fabric_version, version);
         if (alloced) {free(fabric_version);};
         goto done;
       } else {
-        fprintf(stderr,
-                "Invalid version type!\n"
-                "Available types are \"release\", \"snapshot\" or \"fabric\"");
+        printlog("ERROR", "launcher", "Invalid version type! Available types are \"release\", \"snapshot\" or \"fabric\"");
         goto done;
       }
 
@@ -219,7 +223,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  fprintf(stderr, "Error: No mode specified, try -h\n");
+  printlog("ERROR", "launcher", "No mode specified, try -h");
   free(minecraft_path);
   curl_global_cleanup();
   return 1;

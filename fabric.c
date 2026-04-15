@@ -15,7 +15,6 @@
 #endif
 
 void launch_loader_handler(cJSON *child_json) {
-  nullchk(child_json);
 
   cJSON *inherits_from = cJSON_GetObjectItem(child_json, "inheritsFrom");
   nullchk(inherits_from);
@@ -28,14 +27,18 @@ void launch_loader_handler(cJSON *child_json) {
 
   char *parent_buf = read_file(parent_json_path);
   if (!parent_buf) {
-    fprintf(stderr,
-            "Failed to find parent version JSON! Install the parent version "
-            "before launching a Fabric instance for the first time.");
+    printlog("ERROR", __func__,
+             "Failed to find parent version JSON! Install the parent version "
+             "before launching a Fabric instance for the first time.");
     exit(1);
   }
 
   cJSON *parent_json = cJSON_Parse(parent_buf);
-  nullchk(parent_json);
+  if (!parent_json) {
+    printlog("ERROR", __func__,
+             "Failed to parse parent JSON! Is it corrupted?");
+    return;
+  }
 
   cJSON_AddItemReferenceToObject(
       child_json, "assetIndex", cJSON_GetObjectItem(parent_json, "assetIndex"));
@@ -87,17 +90,18 @@ void download_fabric_libraries(cJSON *json) {
     cJSON *mvn_name = cJSON_GetObjectItem(library, "name");
     cJSON *mvn_url = cJSON_GetObjectItem(library, "url");
 
-    char *path = get_jar_path(mvn_name->valuestring);
-    if (!path)
-      puts("mvn path is NULL?");
+    if (!mvn_name || !mvn_url) {
+      printlog("ERROR", __func__, "Maven name/URL is NULL!");
+      return;
+    }
 
+    char *path = get_jar_path(mvn_name->valuestring);
     char url[BUF_LARGE];
     snprintf(url, sizeof(url), "%s%s", mvn_url->valuestring, path);
 
     size_t len = strlen(minecraft_path) + strlen(path) + 50;
     dests[start] = malloc(len);
     snprintf(dests[start], len, "libraries/%s", path);
-    printf("name: %s -> path: %s\n", mvn_name->valuestring, path);
     urls[start] = strdup(url);
     start++;
   }
@@ -114,36 +118,40 @@ void download_fabric_libraries(cJSON *json) {
 
 static void download_main_manifest(char *mc_version) {
 
-
   char fabric_url[BUF_MID];
   char tmp_path[64];
 
   snprintf(fabric_url, sizeof(fabric_url), FABRIC_MANIFEST_LINK "/%s",
            mc_version);
-  snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
+  snprintf(tmp_path, sizeof(tmp_path), "tnt/fabric_temp_%s.json",
            mc_version);
 
-  if(file_exists(tmp_path)) unlink(tmp_path);
+  if (file_exists(tmp_path))
+    unlink(tmp_path);
 
   int status = download_file(fabric_url, tmp_path);
   if (status == 1) {
-    fprintf(stderr, "Failed to download manifest! Please try again.\n");
+    printlog("ERROR", __func__, "Failed to download manifest!");
     unlink(tmp_path);
+    return;
   }
-  
 }
 void list_fabric_versions(char *mc_version) {
 
   download_main_manifest(mc_version);
   char tmp_path[64];
 
-  snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
+  snprintf(tmp_path, sizeof(tmp_path), "tnt/fabric_temp_%s.json",
            mc_version);
 
   char *temp_buf = read_file(tmp_path);
+  if (!temp_buf) {
+    printlog("ERROR", __func__, "Failed to read %s!", tmp_path);
+    return;
+  }
   cJSON *json = cJSON_Parse(temp_buf);
   if (!json) {
-    fprintf(stderr, "failed to parse json\n");
+    printlog("ERROR", __func__, "Failed to parse JSON! Is it corrupted?");
     free(temp_buf);
     return;
   }
@@ -153,7 +161,7 @@ void list_fabric_versions(char *mc_version) {
     cJSON *item = cJSON_GetArrayItem(json, i);
     cJSON *loader = cJSON_GetObjectItem(item, "loader");
     cJSON *version = cJSON_GetObjectItem(loader, "version");
-    printf("%-30s %s\n", version->valuestring, mc_version);
+    printlog("INFO", __func__,"%-30s %s\n", version->valuestring, mc_version);
   }
   cJSON_Delete(json);
   free(temp_buf);
@@ -163,7 +171,7 @@ char *get_latest_loader(char *mc_version) {
   download_main_manifest(mc_version);
   char tmp_path[64];
 
-  snprintf(tmp_path, sizeof(tmp_path), "/tmp/tnt/fabric_temp_%s.json",
+  snprintf(tmp_path, sizeof(tmp_path), "tnt/fabric_temp_%s.json",
            mc_version);
 
   char *temp_buf = read_file(tmp_path);
@@ -174,8 +182,20 @@ char *get_latest_loader(char *mc_version) {
   }
 
   cJSON *first = cJSON_GetArrayItem(json, 0);
+  if (!first) {
+    printf("%s %d", __func__ , __LINE__);
+    return NULL;
+  }
   cJSON *loader = cJSON_GetObjectItem(first, "loader");
+  if (!loader) {
+    printf("%s %d", __func__ , __LINE__);
+    return NULL;
+  }
   cJSON *version = cJSON_GetObjectItem(loader, "version");
+  if (!version) {
+    printf("%s %d", __func__ , __LINE__);
+    return NULL;
+  }
 
   char *out = strdup(version->valuestring);
   cJSON_Delete(json);
@@ -184,7 +204,7 @@ char *get_latest_loader(char *mc_version) {
 }
 
 void download_fabric_manifest(char *mc_version, char *loader_version) {
-  printf("Downloading Fabric loader %s manifest for %s...\n", loader_version,
+  printlog("INFO", __func__,"Downloading Fabric loader %s manifest for %s...\n", loader_version,
          mc_version);
 
   char manifest_path[BUF_MID];
@@ -196,5 +216,11 @@ void download_fabric_manifest(char *mc_version, char *loader_version) {
   snprintf(url_path, sizeof(url_path), "%s/%s/%s/profile/json",
            FABRIC_MANIFEST_LINK, mc_version, loader_version);
 
-  download_file(url_path, manifest_path);
+  int status = download_file(url_path, manifest_path); 
+  if (status == 1) {
+    printlog("ERROR", __func__,"Failed to download Fabric loader manifest for %s!", mc_version);
+    return;
+  }
 }
+
+

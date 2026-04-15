@@ -21,6 +21,7 @@ char *get_asset_index(cJSON *json);
 bool file_exists(char *file);
 char *build_classpath(cJSON *version_json);
 void list_installed(void);
+void printlog(const char *lvl, const char *affected, const char *msg, ...);
 void mkdirs(const char *path);
 
 

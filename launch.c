@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <cjson/cJSON.h>
 
 #include "include/utils.h"
@@ -33,20 +34,20 @@ static void free_launch_resources(char *classpath, char **jvm_args,
   free(jsonbuf);
 }
 
-void launchmc(int dry, char *version) {
+void launchmc(int dry, float mem, char *version) {
   char jsonpath[BUF_MID];
   snprintf(jsonpath, sizeof(jsonpath), "versions/%s/%s.json",
            version, version);
 
   char *jsonbuf = read_file(jsonpath);
   if (!jsonbuf) {
-    fprintf(stderr, "error: failed to read %s\n", jsonpath);
+    printlog("ERROR", __func__, "Failed to READ %s", jsonpath);
     return;
   }
 
   cJSON *json = cJSON_Parse(jsonbuf);
   if (!json) {
-    fprintf(stderr, "error: failed to parse version json\n");
+    printlog("ERROR", __func__, "Failed to PARSE version JSON, is it corrupted?");
     free(jsonbuf);
     return;
   }
@@ -60,7 +61,7 @@ void launchmc(int dry, char *version) {
   cJSON *java_version = cJSON_GetObjectItem(json, "javaVersion");
 
   if (!main_class || !main_class->valuestring) {
-    fprintf(stderr, "error: mainClass not found\n");
+    printlog("ERROR", __func__, "mainClass not found in version JSON, is it corrupted?");
     cJSON_Delete(json);
     free(jsonbuf);
     return;
@@ -79,13 +80,12 @@ void launchmc(int dry, char *version) {
   size_t acc_path_size = strlen(minecraft_path) + 16;
   char accounts_path[acc_path_size];
 
-  snprintf(accounts_path, acc_path_size, "%s/accounts.json", minecraft_path);
+  snprintf(accounts_path, acc_path_size, "%s/zap/creds.json", minecraft_path);
 
   char *accounts_buf = read_file(accounts_path);
   cJSON *accounts_json = cJSON_Parse(accounts_buf);
   if (!accounts_buf) {
-    fprintf(stderr,
-            " Failed to read accounts.json, create one from PrismLauncher\n");
+    printlog("ERROR", __func__, "Failed to READ accounts.json, create one from PrismLauncher");
     free(classpath);
     free(asset_index);
     cJSON_Delete(json);
@@ -96,8 +96,7 @@ void launchmc(int dry, char *version) {
 
   Account *acc = get_account_details(accounts_json);
   char natives_dir[BUF_LARGE];
-  snprintf(natives_dir, sizeof(natives_dir), "natives/%s",
-           version);
+  snprintf(natives_dir, sizeof(natives_dir), "natives/%s", version);
 
   char game_dir[BUF_LARGE];
   getcwd(game_dir, sizeof(game_dir));
@@ -109,9 +108,9 @@ void launchmc(int dry, char *version) {
       .assets_dir = "assets/",
       .asset_index = asset_index,
       .game_dir = game_dir,
-      .username = acc->username,
+      .username = acc->name,
       .uuid = acc->uuid,
-      .access_token = acc->ygg_token,
+      .access_token = acc->mc_token,
   };
 
   char **jvm_args = build_jvm_args(json, &ctx);
@@ -127,14 +126,13 @@ void launchmc(int dry, char *version) {
 
   int total = 2 + jvm_count + 1 + game_count + 1;
   if (total <= 0) {
-    fprintf(stderr, "An error occured while constructing JVM arguments.");
-    fprintf(stderr, "@line 128");
+    printlog("ERROR", __func__, "An error occured while constructing JVM arguments");
     return;
   }
   char **java_args = malloc(sizeof(char *) * (size_t)total);
 
   if (!java_args) {
-    fprintf(stderr, "error: malloc failed\n");
+    printlog("ERROR", __func__, "malloc failed: %s", strerror(errno));
     free_launch_resources(classpath, jvm_args, game_args, asset_index, json,
                           accounts_json, jsonbuf);
     return;
@@ -150,8 +148,12 @@ void launchmc(int dry, char *version) {
              java_version_required);
 
   int idx = 0;
+
+  char memarg[10];
+  snprintf(memarg, sizeof(memarg), "-Xmx%dM", (int)(mem * 1024));
+
   java_args[idx++] = javacmd;
-  java_args[idx++] = "-Xmx2G";
+  java_args[idx++] = memarg;
   for (int i = 0; i < jvm_count; i++)
     java_args[idx++] = jvm_args[i];
   java_args[idx++] = main_class->valuestring;
@@ -170,8 +172,6 @@ void launchmc(int dry, char *version) {
     return;
   }
 
-  
-  // big boy executor
   execvp(javacmd, java_args);
 
   perror("execvp failed");
