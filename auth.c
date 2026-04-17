@@ -23,17 +23,16 @@ typedef struct {
 void auth_flow();
 
 Account *get_account_details(cJSON *creds) {
-    
-    auth_flow();
-    Account *acc = malloc(sizeof(Account));
-    
-    acc->name = cJSON_GetObjectItem(creds, "name")->valuestring;
-    acc->uuid = cJSON_GetObjectItem(creds, "uuid")->valuestring;
 
-    acc->mc_token = cJSON_GetObjectItem(creds, "ygg_token")->valuestring;
+  auth_flow();
+  Account *acc = malloc(sizeof(Account));
 
-    return acc;
+  acc->name = cJSON_GetObjectItem(creds, "name")->valuestring;
+  acc->uuid = cJSON_GetObjectItem(creds, "uuid")->valuestring;
 
+  acc->mc_token = cJSON_GetObjectItem(creds, "ygg_token")->valuestring;
+
+  return acc;
 }
 static size_t write_cb(char *contents, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
@@ -61,17 +60,18 @@ static void reset_buffer(Buffer *buf) {
   buf->size = 0;
 }
 static void free_shit(Account *account) {
-    if (!account) return;
-    free(account->access_token);
-    free(account->refresh_token);
-    free(account->xbl_token);
-    free(account->xsts_token);
-    free(account->mc_token);
-    free(account->uhs);
-    free(account->uuid);
-    free(account->name);
-    
-    memset(account, 0, sizeof(Account));
+  if (!account)
+    return;
+  free(account->access_token);
+  free(account->refresh_token);
+  free(account->xbl_token);
+  free(account->xsts_token);
+  free(account->mc_token);
+  free(account->uhs);
+  free(account->uuid);
+  free(account->name);
+
+  memset(account, 0, sizeof(Account));
 }
 
 static int auth_post(char *url, char *field, Buffer *resp, long *http_code) {
@@ -112,7 +112,7 @@ static int auth_post(char *url, char *field, Buffer *resp, long *http_code) {
   return (int)result;
 }
 static int auth_form_post(char *url, char *field, Buffer *resp,
-                   long *http_code) {
+                          long *http_code) {
   CURL *curl;
   CURLcode result;
 
@@ -179,7 +179,8 @@ static int auth_get(char *url, char *token, Buffer *resp, long *http_code) {
               curl_easy_strerror(result));
 
     /* always cleanup */
-    if (headers) curl_slist_free_all(headers);
+    if (headers)
+      curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
   }
 
@@ -222,7 +223,7 @@ static int msa_auth(Account *account) {
            "scope=service::user.auth.xboxlive.com::MBI_SSL",
            CLIENT_ID, msa_code, redirect_url);
 
-  
+  memset(msa_code, 0, sizeof(msa_code));
   resp.memory = malloc(1);
   resp.size = 0;
 
@@ -261,24 +262,25 @@ static int msa_auth(Account *account) {
   account->access_token = strdup(token->valuestring);        /* free this */
   account->refresh_token = strdup(refresh_tok->valuestring); /* and this  */
   account->ms_expiry = time(NULL) + (long)expiry_obj->valueint;
- 
+
   cJSON_Delete(tok_resp);
 
   reset_buffer(&resp);
   return 0;
-
 }
 
 static int msa_refresh(Account *account) {
   char *refresh_url = "https://login.live.com/oauth20_token.srf";
   char refresh_body[2048];
 
-  snprintf(refresh_body, sizeof(refresh_body),
-             "client_id=%s"
-             "&grant_type=refresh_token"
-             "&refresh_token=%s"
-             "&scope=service::user.auth.xboxlive.com::MBI_SSL",
-             CLIENT_ID, account->refresh_token);
+  snprintf(
+      refresh_body, sizeof(refresh_body),
+      "client_id=%s"
+      "&grant_type=refresh_token"
+      "&refresh_token=%s"
+      "&scope=service::user.auth.xboxlive.com::MBI_SSL"
+      "&redirect_uri=https%%3A%%2F%%2Flogin.live.com%%2Foauth20_desktop.srf",
+      CLIENT_ID, account->refresh_token);
 
   int post_st = auth_form_post(refresh_url, refresh_body, &resp, &http_code);
   if (post_st) {
@@ -292,30 +294,32 @@ static int msa_refresh(Account *account) {
     free(resp.memory);
     return 1;
   }
-  cJSON *refreshed_token_obj = cJSON_GetObjectItem(refresh_json, "access_token");
+  cJSON *refreshed_token_obj =
+      cJSON_GetObjectItem(refresh_json, "access_token");
   if (!refreshed_token_obj) {
     printlog("ERROR", __func__, "No access_token in response: %s", resp.memory);
     free(resp.memory);
     return 1;
   }
-  cJSON *refreshed_refresh_token_obj = cJSON_GetObjectItem(refresh_json, "refresh_token");
+  cJSON *refreshed_refresh_token_obj =
+      cJSON_GetObjectItem(refresh_json, "refresh_token");
   if (!refreshed_refresh_token_obj) {
-    printlog("ERROR", __func__, "No refresh_token in response: %s", resp.memory);
+    printlog("ERROR", __func__, "No refresh_token in response: %s",
+             resp.memory);
     free(resp.memory);
     return 1;
   }
   cJSON *refreshed_expiry = cJSON_GetObjectItem(refresh_json, "expires_in");
 
-
   account->access_token = strdup(refreshed_token_obj->valuestring);
   account->refresh_token = strdup(refreshed_refresh_token_obj->valuestring);
-  account->ms_expiry = time(NULL) + (long)(refreshed_expiry->valuedouble);
+  account->ms_expiry =
+      time(NULL) + (long)(cJSON_GetNumberValue(refreshed_expiry));
 
   cJSON_Delete(refresh_json);
   reset_buffer(&resp);
 
   return 0;
-  
 }
 static int xbl_flow(Account *account) {
   /* -- XBL FLOW --*/
@@ -366,16 +370,16 @@ static int xbl_flow(Account *account) {
       cJSON_GetObjectItem(xbl_json, "DisplayClaims"), "xui");
   cJSON *uhs = cJSON_GetObjectItem(cJSON_GetArrayItem(xui, 0), "uhs");
 
-
   account->xbl_token = strdup(xbl_tok->valuestring);
-  account->uhs = strdup(uhs->valuestring); /* this is same across xbl/xsts flow */
+  account->uhs =
+      strdup(uhs->valuestring); /* this is same across xbl/xsts flow */
 
   cJSON_Delete(xbl_json);
 
   reset_buffer(&resp);
   return 0;
 }
-  /* -- XSTS FLOW --*/
+/* -- XSTS FLOW --*/
 int xsts_flow(Account *account) {
 
   char *xsts_url = "https://xsts.auth.xboxlive.com/xsts/authorize";
@@ -389,7 +393,7 @@ int xsts_flow(Account *account) {
            account->xbl_token);
 
   int post_st = auth_post(xsts_url, xsts_body, &resp, &http_code);
-  
+
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
              __LINE__); /*debug*/
@@ -450,16 +454,16 @@ int xsts_flow(Account *account) {
 
   reset_buffer(&resp);
   return 0;
-
 }
-  /* -- MINECRAFTSERVICES FLOW -- */
+/* -- MINECRAFTSERVICES FLOW -- */
 static int mcsvc_flow(Account *account) {
   char *mcsvc_url =
       "https://api.minecraftservices.com/authentication/login_with_xbox";
   char mcsvc_body[4096];
 
   snprintf(mcsvc_body, sizeof(mcsvc_body),
-           "{ \"identityToken\": \"XBL3.0 x=%s;%s\" }", account->uhs, account->xsts_token);
+           "{ \"identityToken\": \"XBL3.0 x=%s;%s\" }", account->uhs,
+           account->xsts_token);
 
   int post_st = auth_post(mcsvc_url, mcsvc_body, &resp, &http_code);
   if (post_st) {
@@ -482,7 +486,10 @@ static int mcsvc_flow(Account *account) {
     free(resp.memory);
     return 1;
   }
-
+  cJSON *mc_expiryobj = cJSON_GetObjectItem(mcsvc_json, "expires_in");
+  if (mc_expiryobj) {
+    account->mc_expiry = time(NULL) + (long)cJSON_GetNumberValue(mc_expiryobj);
+  }
   account->mc_token = strdup(mcsvc_tokenobj->valuestring);
 
   cJSON_Delete(mcsvc_json);
@@ -490,7 +497,7 @@ static int mcsvc_flow(Account *account) {
   reset_buffer(&resp);
   return 0;
 }
-  /* -- MINECRAFT PROFILE FLOW -- */
+/* -- MINECRAFT PROFILE FLOW -- */
 static int profile_flow(Account *account) {
   char *profile_url = "https://api.minecraftservices.com/minecraft/profile";
 
@@ -542,100 +549,128 @@ static int profile_flow(Account *account) {
 static int save_creds(const Account *account, char *path) {
   cJSON *creds = cJSON_CreateObject();
 
-  if (!cJSON_AddStringToObject(creds, "access_token", account->access_token)) {
-    printlog("ERROR", __func__,"Failed to add access_token to JSON");
+  if (!cJSON_AddStringToObject(creds, "refresh_token",
+                               account->refresh_token)) {
+    printlog("ERROR", __func__, "Failed to add refresh_token to JSON");
     goto fail;
   }
-  if (!cJSON_AddStringToObject(creds, "refresh_token", account->refresh_token)) {
-    printlog("ERROR", __func__,"Failed to add refresh_token to JSON");
-    goto fail;
-  }
-  if (!cJSON_AddNumberToObject(creds, "expires_in", (double)account->ms_expiry)) {
-    printlog("ERROR", __func__,"Failed to add refresh_token to JSON");
-    goto fail;
-  }
-  if (!cJSON_AddStringToObject(creds, "xbl_token", account->xbl_token)) {
-    printlog("ERROR", __func__,"Failed to add xbl_token to JSON");
-    goto fail;
-  }
-  if (!cJSON_AddStringToObject(creds, "xsts_token", account->xsts_token)) {
-    printlog("ERROR", __func__,"Failed to add xsts_token to JSON");
+  if (!cJSON_AddNumberToObject(creds, "expires_in",
+                               (double)account->ms_expiry)) {
+    printlog("ERROR", __func__, "Failed to add expires_In to JSON");
     goto fail;
   }
   if (!cJSON_AddStringToObject(creds, "ygg_token", account->mc_token)) {
-    printlog("ERROR", __func__,"Failed to add ygg_token to JSON");
+    printlog("ERROR", __func__, "Failed to add ygg_token to JSON");
+    goto fail;
+  }
+  if (!cJSON_AddNumberToObject(creds, "mc_expiry",
+                               (double)account->mc_expiry)) {
+    printlog("ERROR", __func__, "Failed to add mc_expiry to JSON");
     goto fail;
   }
   if (!cJSON_AddStringToObject(creds, "uuid", account->uuid)) {
-    printlog("ERROR", __func__,"Failed to add uuid to JSON");
+    printlog("ERROR", __func__, "Failed to add uuid to JSON");
     goto fail;
   }
   if (!cJSON_AddStringToObject(creds, "name", account->name)) {
-    printlog("ERROR", __func__,"Failed to add name to JSON");
+    printlog("ERROR", __func__, "Failed to add name to JSON");
     goto fail;
   }
 
   mkdirs(path);
-  FILE *f = fopen(path, "w");
+  char tmp[256];
+  snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+  
+  FILE *f = fopen(tmp, "w");
   if (!f) {
-    printlog("ERROR", __func__, "Failed to open file for saving credentials: %s", strerror(errno));
+    printlog("ERROR", __func__,
+             "Failed to open file for saving credentials: %s", strerror(errno));
     goto fail;
   }
 
   char *out = cJSON_Print(creds);
-  fputs( out, f);
+  fputs(out, f);
+  fflush(f);
+
+  int fd = fileno(f);
+  fsync(fd);
   fclose(f);
+
+
+  
+  if (rename(tmp, path) ) { 
+    perror("Rename failed");
+  }
 
   free(out);
   cJSON_Delete(creds);
   return 0;
 
-  fail:
-    cJSON_Delete(creds);
-    return 1;
-
+fail:
+  cJSON_Delete(creds);
+  return 1;
 }
 
 void auth_flow() {
 
   char path[512];
-  snprintf(path, sizeof(path), "%s/zap/creds.json", minecraft_path);
+  snprintf(path, sizeof(path), "%s/zap/creds.json.tmp", minecraft_path);
   Account account = {0};
 
-  if(!file_exists(path)) {
-    if (msa_auth(&account)) goto fail;
-    if (xbl_flow(&account)) goto fail;
-    if (xsts_flow(&account)) goto fail;
-    if (mcsvc_flow(&account)) goto fail;
-    if (profile_flow(&account)) goto fail;
+  if (!file_exists(path)) {
+
+    if (msa_auth(&account))
+      goto fail;
+
+    if (xbl_flow(&account))
+      goto fail;
+
+    if (xsts_flow(&account))
+      goto fail;
+
+    if (mcsvc_flow(&account))
+      goto fail;
+
+    if (profile_flow(&account))
+      goto fail;
   } else {
     char *cred_buf = read_file(path);
     cJSON *creds = cJSON_Parse(cred_buf);
     if (!creds) {
-      printlog("ERROR", __func__, "Failed to parse credentials, the file "
-      "may be corrupted. Deleting!");
+      printlog("ERROR", __func__,
+               "Failed to parse credentials, the file "
+               "may be corrupted. Deleting!");
       unlink(path);
-      return;
+      goto fail;
     }
-    cJSON *expiry = cJSON_GetObjectItem(creds, "expires_in");
-    if (time(NULL) > expiry->valuedouble) {
+    cJSON *ms_expiry = cJSON_GetObjectItem(creds, "expires_in");
+    cJSON *mc_expiry = cJSON_GetObjectItem(creds, "mc_expiry");
+
+    if (time(NULL) + 7200 > ms_expiry->valuedouble ||
+        time(NULL) + 7200 > mc_expiry->valuedouble) {
       cJSON *refresh_token_obj = cJSON_GetObjectItem(creds, "refresh_token");
       account.refresh_token = strdup(refresh_token_obj->valuestring);
-      if (msa_refresh(&account)) goto fail;
-      if (xbl_flow(&account)) goto fail;
-      if (xsts_flow(&account)) goto fail;
-      if (mcsvc_flow(&account)) goto fail;
-      if (profile_flow(&account)) goto fail;
-    } else return;
-
+      if (msa_refresh(&account))
+        goto fail;
+      if (xbl_flow(&account))
+        goto fail;
+      if (xsts_flow(&account))
+        goto fail;
+      if (mcsvc_flow(&account))
+        goto fail;
+      if (profile_flow(&account))
+        goto fail;
+    } else
+      return;
   }
-  if (save_creds(&account, path)) goto fail;
+save:
+  if (save_creds(&account, path))
+    goto fail;
   free_shit(&account);
+  return;
 
-
-  fail:
-    printlog("ERROR", __func__, "Error occured during authentication.");
-    printlog("INFO", __func__, "Aborting!");
-    return;
-
+fail:
+  printlog("ERROR", __func__, "Error occured during authentication.");
+  printlog("INFO", __func__, "Aborting!");
+  exit(1);
 }

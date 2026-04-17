@@ -28,6 +28,7 @@ typedef struct {
 
     /* minecraft */
     char *mc_token;
+    long long mc_expiry;
     char *uuid;
     char *name;
 } Account;

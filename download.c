@@ -14,16 +14,37 @@ static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *ud) {
     return fwrite(ptr, size, nmemb, (FILE *)ud);
 }
 
+static void print_progress(int current, int total) {
+    int bar_width = 40; 
+    float progress = (float)current / total;
+    int filled_width = progress * bar_width;
+
+    printf("\r[");
+    
+    for (int i = 0; i < bar_width; i++) {
+        if (i < filled_width) printf("█");
+        else printf(" ");                  
+    }
+    
+ 
+    printf("] %d%% \e[K", (int)(progress * 100));
+    fflush(stdout); 
+}
+
 void download_files(char **urls, char **dests, int n) {
     CURLM *m = curl_multi_init();
     int max = 16; 
     int next = 0;
     int run = 0;
+    int finished = 0;
 
+    printf("\e[?25l");
     while (next < n || run > 0) {
         while (next < n && run < max) {
             if (access(dests[next], F_OK) == 0) {
                 next++;
+                finished++;
+                print_progress(finished, n);
                 continue;
             }
             
@@ -32,7 +53,7 @@ void download_files(char **urls, char **dests, int n) {
             if (!f) { next++; continue; }
 
             CURL *e = curl_easy_init();
-            printlog("INFO", __func__,"Downloading: %s", urls[next]);
+            //printlog("INFO", __func__,"Downloading: %s", urls[next]);
             curl_easy_setopt(e, CURLOPT_URL,            urls[next]);
             curl_easy_setopt(e, CURLOPT_WRITEFUNCTION,  write_cb);
             curl_easy_setopt(e, CURLOPT_WRITEDATA,      f);
@@ -51,6 +72,8 @@ void download_files(char **urls, char **dests, int n) {
         while ((msg = curl_multi_info_read(m, &q))) {
             if (msg->msg != CURLMSG_DONE) continue;
 
+            finished++;
+            print_progress(finished, n);
             CURL *e = msg->easy_handle;
             FILE *f;
             curl_easy_getinfo(e, CURLINFO_PRIVATE, &f);
@@ -65,6 +88,7 @@ void download_files(char **urls, char **dests, int n) {
         if (run) curl_multi_poll(m, NULL, 0, 1000, NULL);
     }
     curl_multi_cleanup(m);
+    printf("\e[?25h\n");
 }
 
 int download_file(const char *url, char *dest) {
