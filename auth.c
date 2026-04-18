@@ -20,10 +20,7 @@ typedef struct {
   size_t size;
 } Buffer;
 
-typedef enum {
-  POST_FORM,
-  POST_JSON
-} PostType;
+typedef enum { POST_FORM, POST_JSON } PostType;
 
 static size_t write_cb(char *contents, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
@@ -65,19 +62,21 @@ static void free_shit(Account *account) {
   memset(account, 0, sizeof(Account));
 }
 
-static int auth_post(PostType type, char *url, char *field, Buffer *resp, long *http_code) {
+static int auth_post(PostType type, char *url, char *field, Buffer *resp,
+                     long *http_code) {
   CURL *curl;
   CURLcode result;
 
   struct curl_slist *headers = NULL;
   switch (type) {
-    case POST_JSON:
-      headers = curl_slist_append(headers, "Content-Type: application/json");
-      headers = curl_slist_append(headers, "Accept: application/json");
-      break;
-    case POST_FORM:
-      headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-      break;
+  case POST_JSON:
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, "Accept: application/json");
+    break;
+  case POST_FORM:
+    headers = curl_slist_append(
+        headers, "Content-Type: application/x-www-form-urlencoded");
+    break;
   }
   /* get a curl handle */
   curl = curl_easy_init();
@@ -142,7 +141,6 @@ static int auth_get(char *url, char *token, Buffer *resp, long *http_code) {
       curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
   }
-
   return 0;
 }
 
@@ -187,7 +185,8 @@ static int msa_auth(Account *account) {
   resp.memory = malloc(1);
   resp.size = 0;
 
-  int post_st = auth_post(POST_FORM, mstoken_url, mstoken_body, &resp, &http_code);
+  int post_st =
+      auth_post(POST_FORM, mstoken_url, mstoken_body, &resp, &http_code);
   if (post_st) {
     puts("An error occured when POST"); /*debug*/
 
@@ -242,7 +241,8 @@ static int msa_refresh(Account *account) {
       "&redirect_uri=https%%3A%%2F%%2Flogin.live.com%%2Foauth20_desktop.srf",
       CLIENT_ID, account->refresh_token);
 
-  int post_st = auth_post(POST_FORM,refresh_url, refresh_body, &resp, &http_code);
+  int post_st =
+      auth_post(POST_FORM, refresh_url, refresh_body, &resp, &http_code);
   if (post_st) {
     puts("An error occured when POST"); /*debug*/
     free(resp.memory);
@@ -284,44 +284,56 @@ static int msa_refresh(Account *account) {
 static int xbl_flow(Account *account) {
   /* -- XBL FLOW --*/
   char *xbl_url = "https://user.auth.xboxlive.com/user/authenticate";
-  char xbl_body[4096];
-  snprintf(xbl_body, sizeof(xbl_body),
-           "{ \"Properties\": { \"AuthMethod\": \"RPS\", \"SiteName\": "
-           "\"user.auth.xboxlive.com\", \"RpsTicket\": \"%s\" },"
-           "\"RelyingParty\": \"http://auth.xboxlive.com\", \"TokenType\": "
-           "\"JWT\" }",
-           account->access_token);
 
-  int post_st = auth_post(xbl_url, xbl_body, &resp, &http_code);
+  cJSON *xbl_root = cJSON_CreateObject();
+  cJSON *props = cJSON_AddObjectToObject(xbl_root, "Properties");
+  cJSON_AddStringToObject(props, "AuthMethod", "RPS");
+  cJSON_AddStringToObject(props, "SiteName", "user.auth.xboxlive.com");
+  cJSON_AddStringToObject(props, "RpsTicket", account->access_token);
+
+  cJSON_AddStringToObject(xbl_root, "RelyingParty", "http://auth.xboxlive.com");
+  cJSON_AddStringToObject(xbl_root, "TokenType", "JWT");
+
+  char *xbl_body = cJSON_PrintUnformatted(xbl_root);
+  int post_st = auth_post(POST_JSON, xbl_url, xbl_body, &resp, &http_code);
+
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
              __LINE__); /*debug*/
-
+    free(xbl_body);
+    cJSON_Delete(xbl_root);
     free(resp.memory);
     return 1;
   }
+
   if (http_code == 400) {
     reset_buffer(&resp);
-    snprintf(xbl_body, sizeof(xbl_body),
-             "{ \"Properties\": { \"AuthMethod\": \"RPS\", \"SiteName\": "
-             "\"user.auth.xboxlive.com\", \"RpsTicket\": \"d=%s\" },"
-             "\"RelyingParty\": \"http://auth.xboxlive.com\", \"TokenType\": "
-             "\"JWT\" }",
-             account->access_token);
-    post_st = auth_post(xbl_url, xbl_body, &resp, &http_code);
+    cJSON *rps_obj = cJSON_GetObjectItem(props, "RpsTicket");
+
+    char d_token[4096];
+    snprintf(d_token, sizeof(d_token), "d=%s", account->access_token);
+    cJSON_SetValuestring(rps_obj, d_token);
+
+    free(xbl_body);
+    xbl_body = cJSON_PrintUnformatted(xbl_root);
+
+    post_st = auth_post(POST_JSON, xbl_url, xbl_body, &resp, &http_code);
+
     if (post_st) {
       printlog("ERROR", __func__, "An error occured when POST at %d",
                __LINE__); /*debug*/
-
+      free(xbl_body);
+      cJSON_Delete(xbl_root);
       free(resp.memory);
       return 1;
     }
+    free(xbl_body);
+    cJSON_Delete(xbl_root);
   }
 
   cJSON *xbl_json = cJSON_Parse(resp.memory);
   if (!xbl_json) {
     fprintf(stderr, "cJSON parse failed: %s\n", resp.memory);
-
     free(resp.memory);
     return 1;
   }
@@ -343,21 +355,26 @@ static int xbl_flow(Account *account) {
 static int xsts_flow(Account *account) {
 
   char *xsts_url = "https://xsts.auth.xboxlive.com/xsts/authorize";
-  char xsts_body[2048];
 
-  snprintf(xsts_body, sizeof(xsts_body),
-           "{ \"Properties\": { \"SandboxId\": \"RETAIL\", \"UserTokens\": "
-           "[\"%s\"] },"
-           " \"RelyingParty\": \"rp://api.minecraftservices.com/\", "
-           "\"TokenType\": \"JWT\" }",
-           account->xbl_token);
+  cJSON *xsts_root = cJSON_CreateObject();
+  cJSON *props = cJSON_AddObjectToObject(xsts_root, "Properties");
+  cJSON_AddStringToObject(props, "SandboxId", "RETAIL");
+  cJSON *user_tokens = cJSON_AddArrayToObject(props, "UserTokens");
+  cJSON_AddItemToArray(user_tokens, cJSON_CreateString(account->xbl_token));
 
-  int post_st = auth_post(POST_JSON,xsts_url, xsts_body, &resp, &http_code);
+  cJSON_AddStringToObject(xsts_root, "RelyingParty",
+                          "rp://api.minecraftservices.com/");
+  cJSON_AddStringToObject(xsts_root, "TokenType", "JWT");
+
+  char *xsts_body = cJSON_PrintUnformatted(xsts_root);
+  cJSON_Delete(xsts_root);
+
+  int post_st = auth_post(POST_JSON, xsts_url, xsts_body, &resp, &http_code);
 
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
              __LINE__); /*debug*/
-
+    free(xsts_body);
     free(resp.memory);
     return 1;
   }
@@ -419,13 +436,20 @@ static int xsts_flow(Account *account) {
 static int mcsvc_flow(Account *account) {
   char *mcsvc_url =
       "https://api.minecraftservices.com/authentication/login_with_xbox";
-  char mcsvc_body[4096];
+  char identity_token[4096];
 
-  snprintf(mcsvc_body, sizeof(mcsvc_body),
-           "{ \"identityToken\": \"XBL3.0 x=%s;%s\" }", account->uhs,
+  snprintf(identity_token, sizeof(identity_token),
+           "XBL3.0 x=%s;%s", account->uhs,
            account->xsts_token);
 
-  int post_st = auth_post(POST_JSON,mcsvc_url, mcsvc_body, &resp, &http_code);
+  cJSON *mcsvc_root = cJSON_CreateObject();
+  cJSON_AddStringToObject(mcsvc_root, "identityToken", identity_token);
+
+  char *mcsvc_body = cJSON_PrintUnformatted(mcsvc_root);
+  cJSON_Delete(mcsvc_root);
+
+  int post_st = auth_post(POST_JSON, mcsvc_url, mcsvc_body, &resp, &http_code);
+  free(mcsvc_body);
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
              __LINE__); /*debug*/
@@ -572,24 +596,24 @@ fail:
 static void auth_flow() {
 
   char path[512];
-  snprintf(path, sizeof(path), "%s/zap/creds.json.tmp", minecraft_path);
+  snprintf(path, sizeof(path), "%s/zap/creds.json", minecraft_path);
   Account account = {0};
 
   if (!file_exists(path)) {
 
-    if (msa_auth(&account))
+    if (msa_auth(&account) != 0)
       goto fail;
 
-    if (xbl_flow(&account))
+    if (xbl_flow(&account)!= 0)
       goto fail;
 
-    if (xsts_flow(&account))
+    if (xsts_flow(&account)!= 0)
       goto fail;
 
-    if (mcsvc_flow(&account))
+    if (mcsvc_flow(&account)!= 0)
       goto fail;
 
-    if (profile_flow(&account))
+    if (profile_flow(&account)!= 0)
       goto fail;
   } else {
     char *cred_buf = read_file(path);
@@ -608,22 +632,22 @@ static void auth_flow() {
         time(NULL) + 7200 > mc_expiry->valuedouble) {
       cJSON *refresh_token_obj = cJSON_GetObjectItem(creds, "refresh_token");
       account.refresh_token = strdup(refresh_token_obj->valuestring);
-      if (msa_refresh(&account))
+      if (msa_refresh(&account)!= 0)
         goto fail;
-      if (xbl_flow(&account))
+      if (xbl_flow(&account)!= 0)
         goto fail;
-      if (xsts_flow(&account))
+      if (xsts_flow(&account)!= 0)
         goto fail;
-      if (mcsvc_flow(&account))
+      if (mcsvc_flow(&account)!= 0)
         goto fail;
-      if (profile_flow(&account))
+      if (profile_flow(&account)!= 0)
         goto fail;
     } else
       return;
   }
-save:
-  if (save_creds(&account, path))
+  if (save_creds(&account, path)!= 0)
     goto fail;
+
   free_shit(&account);
   return;
 
