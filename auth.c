@@ -20,20 +20,11 @@ typedef struct {
   size_t size;
 } Buffer;
 
-void auth_flow();
+typedef enum {
+  POST_FORM,
+  POST_JSON
+} PostType;
 
-Account *get_account_details(cJSON *creds) {
-
-  auth_flow();
-  Account *acc = malloc(sizeof(Account));
-
-  acc->name = cJSON_GetObjectItem(creds, "name")->valuestring;
-  acc->uuid = cJSON_GetObjectItem(creds, "uuid")->valuestring;
-
-  acc->mc_token = cJSON_GetObjectItem(creds, "ygg_token")->valuestring;
-
-  return acc;
-}
 static size_t write_cb(char *contents, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
   Buffer *mem = (Buffer *)userp;
@@ -74,52 +65,20 @@ static void free_shit(Account *account) {
   memset(account, 0, sizeof(Account));
 }
 
-static int auth_post(char *url, char *field, Buffer *resp, long *http_code) {
+static int auth_post(PostType type, char *url, char *field, Buffer *resp, long *http_code) {
   CURL *curl;
   CURLcode result;
 
   struct curl_slist *headers = NULL;
-  headers = curl_slist_append(headers, "Content-Type: application/json");
-  headers = curl_slist_append(headers, "Accept: application/json");
-
-  /* get a curl handle */
-  curl = curl_easy_init();
-  if (curl) {
-    /* First set the URL that is about to receive our POST. This URL can
-       be an https:// URL if that is what should receive the data. */
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, resp);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    /* Now specify the POST data */
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, field);
-
-    /* Perform the request, result gets the return code */
-    result = curl_easy_perform(curl);
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, http_code);
-    /* Check for errors */
-    if (result != CURLE_OK)
-      fprintf(stderr, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(result));
-
-    /* always cleanup */
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
+  switch (type) {
+    case POST_JSON:
+      headers = curl_slist_append(headers, "Content-Type: application/json");
+      headers = curl_slist_append(headers, "Accept: application/json");
+      break;
+    case POST_FORM:
+      headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+      break;
   }
-
-  return (int)result;
-}
-static int auth_form_post(char *url, char *field, Buffer *resp,
-                          long *http_code) {
-  CURL *curl;
-  CURLcode result;
-
-  struct curl_slist *headers = NULL;
-  headers = curl_slist_append(
-      headers, "Content-Type: application/x-www-form-urlencoded");
-
   /* get a curl handle */
   curl = curl_easy_init();
   if (curl) {
@@ -209,6 +168,7 @@ static int msa_auth(Account *account) {
     execlp("xdg-open", "xdg-open", code_url, NULL);
     exit(0);
   }
+
   char msa_code[1024];
   printlog("INFO", __func__,
            "Please enter the access code from"
@@ -227,9 +187,9 @@ static int msa_auth(Account *account) {
   resp.memory = malloc(1);
   resp.size = 0;
 
-  int post_st = auth_form_post(mstoken_url, mstoken_body, &resp, &http_code);
+  int post_st = auth_post(POST_FORM, mstoken_url, mstoken_body, &resp, &http_code);
   if (post_st) {
-    puts("An error occured when GET"); /*debug*/
+    puts("An error occured when POST"); /*debug*/
 
     free(resp.memory);
     return 1;
@@ -282,7 +242,7 @@ static int msa_refresh(Account *account) {
       "&redirect_uri=https%%3A%%2F%%2Flogin.live.com%%2Foauth20_desktop.srf",
       CLIENT_ID, account->refresh_token);
 
-  int post_st = auth_form_post(refresh_url, refresh_body, &resp, &http_code);
+  int post_st = auth_post(POST_FORM,refresh_url, refresh_body, &resp, &http_code);
   if (post_st) {
     puts("An error occured when POST"); /*debug*/
     free(resp.memory);
@@ -380,7 +340,7 @@ static int xbl_flow(Account *account) {
   return 0;
 }
 /* -- XSTS FLOW --*/
-int xsts_flow(Account *account) {
+static int xsts_flow(Account *account) {
 
   char *xsts_url = "https://xsts.auth.xboxlive.com/xsts/authorize";
   char xsts_body[2048];
@@ -392,7 +352,7 @@ int xsts_flow(Account *account) {
            "\"TokenType\": \"JWT\" }",
            account->xbl_token);
 
-  int post_st = auth_post(xsts_url, xsts_body, &resp, &http_code);
+  int post_st = auth_post(POST_JSON,xsts_url, xsts_body, &resp, &http_code);
 
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
@@ -465,7 +425,7 @@ static int mcsvc_flow(Account *account) {
            "{ \"identityToken\": \"XBL3.0 x=%s;%s\" }", account->uhs,
            account->xsts_token);
 
-  int post_st = auth_post(mcsvc_url, mcsvc_body, &resp, &http_code);
+  int post_st = auth_post(POST_JSON,mcsvc_url, mcsvc_body, &resp, &http_code);
   if (post_st) {
     printlog("ERROR", __func__, "An error occured when POST at %d",
              __LINE__); /*debug*/
@@ -580,7 +540,7 @@ static int save_creds(const Account *account, char *path) {
   mkdirs(path);
   char tmp[256];
   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
-  
+
   FILE *f = fopen(tmp, "w");
   if (!f) {
     printlog("ERROR", __func__,
@@ -596,9 +556,7 @@ static int save_creds(const Account *account, char *path) {
   fsync(fd);
   fclose(f);
 
-
-  
-  if (rename(tmp, path) ) { 
+  if (rename(tmp, path)) {
     perror("Rename failed");
   }
 
@@ -611,7 +569,7 @@ fail:
   return 1;
 }
 
-void auth_flow() {
+static void auth_flow() {
 
   char path[512];
   snprintf(path, sizeof(path), "%s/zap/creds.json.tmp", minecraft_path);
@@ -673,4 +631,17 @@ fail:
   printlog("ERROR", __func__, "Error occured during authentication.");
   printlog("INFO", __func__, "Aborting!");
   exit(1);
+}
+
+Account *get_account_details(cJSON *creds) {
+
+  auth_flow();
+  Account *acc = malloc(sizeof(Account));
+
+  acc->name = cJSON_GetObjectItem(creds, "name")->valuestring;
+  acc->uuid = cJSON_GetObjectItem(creds, "uuid")->valuestring;
+
+  acc->mc_token = cJSON_GetObjectItem(creds, "ygg_token")->valuestring;
+
+  return acc;
 }
