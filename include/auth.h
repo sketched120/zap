@@ -33,6 +33,7 @@ typedef struct {
     char *name;
 } Account;
 
+void auth_flow(void);
 Account *get_account_details(cJSON *auth_json);
 
 #endif

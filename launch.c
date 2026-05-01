@@ -77,6 +77,8 @@ void launchmc(int dry, float mem, char *version) {
   char *asset_index = get_asset_index(json);
   char *classpath = build_classpath(json);
 
+  /* do the auth flow BEFORE parsing the json why the fuck did i not think about this */
+  auth_flow();
   size_t acc_path_size = strlen(minecraft_path) + 16;
   char accounts_path[acc_path_size];
 

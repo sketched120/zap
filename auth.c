@@ -12,7 +12,7 @@
 
 #include "include/auth.h"
 
-/* we are reusing the official minecraft launcher's client id here */
+/* using the  official minecraft launcher's client id since i cant get one*/
 #define CLIENT_ID "00000000402B5328"
 
 typedef struct {
@@ -151,6 +151,7 @@ static long http_code;
 
 /* -- Microsoft auth -- */
 static int msa_auth(Account *account) {
+  printlog("INFO", __func__, "Authenticating with Microsoft...");
   char *redirect_url = "https://login.live.com/oauth20_desktop.srf";
   char code_url[512];
 
@@ -229,6 +230,8 @@ static int msa_auth(Account *account) {
 }
 
 static int msa_refresh(Account *account) {
+  printlog("INFO", __func__, "Refreshing Microsoft credentials...");
+
   char *refresh_url = "https://login.live.com/oauth20_token.srf";
   char refresh_body[2048];
 
@@ -283,6 +286,8 @@ static int msa_refresh(Account *account) {
 }
 static int xbl_flow(Account *account) {
   /* -- XBL FLOW --*/
+  printlog("INFO", __func__, "Authenticating with Xbox Live...");
+
   char *xbl_url = "https://user.auth.xboxlive.com/user/authenticate";
 
   cJSON *xbl_root = cJSON_CreateObject();
@@ -353,6 +358,7 @@ static int xbl_flow(Account *account) {
 }
 /* -- XSTS FLOW --*/
 static int xsts_flow(Account *account) {
+  printlog("INFO", __func__, "Authenticating with XSTS...");
 
   char *xsts_url = "https://xsts.auth.xboxlive.com/xsts/authorize";
 
@@ -434,6 +440,8 @@ static int xsts_flow(Account *account) {
 }
 /* -- MINECRAFTSERVICES FLOW -- */
 static int mcsvc_flow(Account *account) {
+    printlog("INFO", __func__, "Authenticating with Minecraft Services...");
+
   char *mcsvc_url =
       "https://api.minecraftservices.com/authentication/login_with_xbox";
   char identity_token[4096];
@@ -483,6 +491,8 @@ static int mcsvc_flow(Account *account) {
 }
 /* -- MINECRAFT PROFILE FLOW -- */
 static int profile_flow(Account *account) {
+    printlog("INFO", __func__, "Fetching Minecraft profile...");
+
   char *profile_url = "https://api.minecraftservices.com/minecraft/profile";
 
   int get_st = auth_get(profile_url, account->mc_token, &resp, &http_code);
@@ -593,7 +603,7 @@ fail:
   return 1;
 }
 
-static void auth_flow() {
+void auth_flow() {
 
   char path[512];
   snprintf(path, sizeof(path), "%s/zap/creds.json", minecraft_path);
@@ -659,7 +669,6 @@ fail:
 
 Account *get_account_details(cJSON *creds) {
 
-  auth_flow();
   Account *acc = malloc(sizeof(Account));
 
   acc->name = cJSON_GetObjectItem(creds, "name")->valuestring;
